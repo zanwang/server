@@ -8,9 +8,13 @@ import (
 )
 
 func main() {
-  server := martini.Classic()
-  port := Config.Get("server").(map[interface{}]interface{})["port"].(int)
+  m := martini.Classic()
+  config := Config.Get("server").(map[interface{}]interface{})
+  host := config["host"].(string)
+  port := config["port"].(int)
 
-  log.Printf("Listening at port %d", port)
-  log.Fatal(http.ListenAndServe(":" + strconv.Itoa(port), server))
+  m.Use(martini.Static("public"))
+
+  log.Printf("Listening at port %s:%d", host, port)
+  log.Fatal(http.ListenAndServe(host + ":" + strconv.Itoa(port), m))
 }

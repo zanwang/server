@@ -15,6 +15,8 @@ type config struct {
 
 const configDir = "config"
 const defaultEnv = "dev"
+const envVarName = "MARTINI_ENV"
+
 var acceptExtnameForConfig = []string{"yml", "yaml"}
 var Config = config{}
 
@@ -42,11 +44,11 @@ func init() {
 }
 
 func getenv() string {
-  env := os.Getenv("MARTINI_ENV")
+  env := os.Getenv(envVarName)
 
   if env == "" {
     env = defaultEnv
-    os.Setenv("MARTINI_ENV", defaultEnv)
+    os.Setenv(envVarName, defaultEnv)
   }
 
   return env

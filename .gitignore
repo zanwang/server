@@ -1,1 +1,4 @@
-maji.moe
+*.log
+node_modules
+public/css/
+public/js/
