@@ -6,6 +6,7 @@ import (
   "log"
   "os"
   "gopkg.in/yaml.v1"
+  "github.com/tommy351/maji.moe/util"
 )
 
 type config struct {
@@ -14,15 +15,13 @@ type config struct {
 }
 
 const configDir = "config"
-const defaultEnv = "dev"
-const envVarName = "MARTINI_ENV"
 
 var acceptExtnameForConfig = []string{"yml", "yaml"}
 var Config = config{}
 
 func init() {
-  env := getenv()
-  basedir := Basedir()
+  env := util.Environment()
+  basedir := util.Basedir()
 
   for _, ext := range acceptExtnameForConfig {
     path := filepath.Join(basedir, configDir, env + "." + ext)
@@ -41,24 +40,6 @@ func init() {
 
   log.Printf("Environment: %s", env)
   log.Printf("Config path: %s", Config.Path)
-}
-
-func getenv() string {
-  env := os.Getenv(envVarName)
-
-  if env == "" {
-    env = defaultEnv
-    os.Setenv(envVarName, defaultEnv)
-  }
-
-  return env
-}
-
-func Basedir() string {
-  dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-  check(err)
-
-  return dir
 }
 
 func exists(path string) bool {
