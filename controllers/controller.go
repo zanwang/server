@@ -6,13 +6,19 @@ import (
   "html/template"
   "encoding/json"
   "encoding/xml"
+  "log"
+  "reflect"
   "github.com/tommy351/maji.moe/util"
 )
 
 type Controller struct {
   w http.ResponseWriter
   r *http.Request
-  methods map[string]func()
+  methods map[string]func(w http.ResponseWriter, r *http.Request)
+  filters struct {
+    before map[string][]interface{}
+    after map[string][]interface{}
+  }
 }
 
 type ControllerInterface interface {
@@ -24,12 +30,17 @@ type ControllerInterface interface {
   Patch()
   Head()
   Error(err error)
+  Prepare()
   Init()
   AddMethod(name string, fn func())
 }
 
+func (c *Controller) Prepare() {
+  c.methods = make(map[string]func(w http.ResponseWriter, r *http.Request))
+}
+
 func (c *Controller) Init() {
-  c.methods = make(map[string]func())
+  // Register filters here
 }
 
 func (c *Controller) Handle(w http.ResponseWriter, r *http.Request) {
@@ -37,38 +48,102 @@ func (c *Controller) Handle(w http.ResponseWriter, r *http.Request) {
   c.r = r
 
   if fn, ok := c.methods[r.Method]; ok {
-    fn()
+    fn(w, r)
   } else {
-    c.methodNotAllowed()
+    http.NotFound(c.w, c.r)
   }
 }
 
+func (c *Controller) Before(method string, fn ...interface{}) {
+  c.filters.before[method] = fn
+}
+
+func (c *Controller) After(method string, fn ...interface{}) {
+  c.filters.after[method] = fn
+}
+
+func noopHandler(w http.ResponseWriter, r *http.Request){}
+
+// https://github.com/shelakel/go-middleware
+func (c *Controller) AddMethod(method string, fn func()) {
+  filters := []interface{}{fn}
+  handler := noopHandler
+
+  if before, ok := c.filters.before[method]; ok {
+    filters = append(before, filters)
+  }
+
+  if after, ok := c.filters.after[method]; ok {
+    filters = append(filters, after)
+  }
+
+  for i := len(filters) - 1; i >= 0; i-- {
+    next := handler
+
+    switch current := filters[i].(type) {
+    case func(http.ResponseWriter, *http.Request, func()):
+      handler = func(w http.ResponseWriter, r *http.Request) {
+        current(w, r, func() {
+          next(w, r)
+        })
+      }
+    case func(http.ResponseWriter, *http.Request):
+      handler = func(w http.ResponseWriter, r *http.Request) {
+        current(w, r)
+        next(w, r)
+      }
+    case func(*Controller, func()):
+      handler = func(w http.ResponseWriter, r *http.Request) {
+        current(c, func() {
+          next(w, r)
+        })
+      }
+    case func(*Controller):
+      handler = func(w http.ResponseWriter, r *http.Request) {
+        current(c)
+        next(w, r)
+      }
+    case func(func()):
+      handler = func(w http.ResponseWriter, r *http.Request) {
+        current(func() {
+          next(w, r)
+        })
+      }
+    case func():
+      handler = func(w http.ResponseWriter, r *http.Request) {
+        current()
+        next(w, r)
+      }
+    default:
+        log.Panicf("Unsupported middleware type '%v' at index %d", reflect.TypeOf(current), i)
+    }
+  }
+
+  c.methods[method] = handler
+}
+
 func (c *Controller) Get() {
-  c.methodNotAllowed()
+  http.NotFound(c.w, c.r)
 }
 
 func (c *Controller) Post() {
-  c.methodNotAllowed()
+  http.NotFound(c.w, c.r)
 }
 
 func (c *Controller) Put() {
-  c.methodNotAllowed()
+  http.NotFound(c.w, c.r)
 }
 
 func (c *Controller) Delete() {
-  c.methodNotAllowed()
+  http.NotFound(c.w, c.r)
 }
 
 func (c *Controller) Patch() {
-  c.methodNotAllowed()
+  http.NotFound(c.w, c.r)
 }
 
 func (c *Controller) Head() {
-  c.methodNotAllowed()
-}
-
-func (c *Controller) methodNotAllowed() {
-  http.Error(c.w, "Method Not Allowed", 405)
+  http.NotFound(c.w, c.r)
 }
 
 func (c *Controller) Write(data interface{}) {
@@ -142,8 +217,4 @@ func (c *Controller) Redirect(path string, code int) {
 
 func (c *Controller) Error(err error) {
   http.Error(c.w, err.Error(), http.StatusInternalServerError)
-}
-
-func (c *Controller) AddMethod(name string, fn func()) {
-  c.methods[name] = fn
 }

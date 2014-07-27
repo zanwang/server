@@ -29,6 +29,7 @@ func main() {
 
 func addRoute(r *mux.Router, path string, app controllers.ControllerInterface) {
   // Initialize the controller
+  app.Prepare()
   app.Init()
   app.AddMethod("GET", app.Get)
   app.AddMethod("POST", app.Post)

@@ -5,14 +5,22 @@ import (
   "os"
 )
 
+var baseDir string
+
 func Basedir() string {
+  if baseDir != "" {
+    return baseDir
+  }
+
   dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 
   if err != nil {
     panic(err)
   }
 
-  return dir
+  baseDir = dir
+
+  return baseDir
 }
 
 func ViewDir() string {

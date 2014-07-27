@@ -28,10 +28,18 @@ func init() {
 
     if exists(path) {
       data, err := ioutil.ReadFile(path)
-      check(err)
+
+      if err != nil {
+        panic(err)
+        return
+      }
 
       err = yaml.Unmarshal(data, &Config.Data)
-      check(err)
+
+      if err != nil {
+        panic(err)
+        return
+      }
 
       Config.Path = path
       break
@@ -47,12 +55,6 @@ func exists(path string) bool {
     return true
   } else {
     return false
-  }
-}
-
-func check(e error) {
-  if e != nil {
-    panic(e)
   }
 }
 
