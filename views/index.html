@@ -6,7 +6,23 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <a href="/login">Login</a>
-  <a href="/signup">Signup</a>
+  <div id="banner">
+    <form action="/domains" id="banner-form" method="post">
+      <input type="text" name="name">
+      <button type="submit">Search</button>
+    </form>
+  </div>
+  <header id="header-wrap">
+    <div id="header">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">maji.moe</a>
+      </h1>
+      <nav id="main-nav">
+        <a href="/signup" class="btn yellow">Sign up</a>
+        <a href="/login" class="btn default">Log in</a>
+      </nav>
+    </div>
+  </header>
+  <script src="/js/home.js"></script>
 </body>
 </html>

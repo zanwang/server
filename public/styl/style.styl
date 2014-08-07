@@ -1,3 +1,19 @@
 @import "nib"
+@import "_variables"
 
 global-reset()
+
+*
+*:before
+*:after
+  box-sizing: border-box
+
+body
+  background: color-background
+  color: color-text
+  font: font-size font-sans
+  -webkit-font-smoothing: antialiased
+  -moz-osx-font-smoothing: grayscale
+
+@import "_common/button"
+@import "_partial/header"

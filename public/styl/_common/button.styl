@@ -1,0 +1,23 @@
+.btn
+  cursor: pointer
+  display: inline-block
+  white-space: nowrap
+  line-height: 1
+  padding: 8px 15px
+  text-decoration: none
+  border-width: 1px
+  border-style: solid
+  border-radius: 3px
+  font-weight: bold
+  &.default
+    color: color-text
+    border-color: #ccc
+    &:hover
+      background: #eee
+  &.yellow
+    color: #fff
+    background: color-yellow
+    border-color: darken(color-yellow, 10%)
+    &:hover
+      background: darken(color-yellow, 10%)
+      border-color: darken(color-yellow, 20%)

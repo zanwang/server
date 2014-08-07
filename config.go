@@ -6,7 +6,7 @@ import (
   "log"
   "os"
   "gopkg.in/yaml.v1"
-  "github.com/tommy351/maji.moe/util"
+  "github.com/go-martini/martini"
 )
 
 type config struct {
@@ -16,15 +16,17 @@ type config struct {
 
 const configDir = "config"
 
-var acceptExtnameForConfig = []string{"yml", "yaml"}
-var Config = config{}
+var (
+  acceptExtnameForConfig = []string{"yml", "yaml"}
+  Config = config{}
+  BaseDir, _ = os.Getwd()
+)
 
 func init() {
-  env := util.Environment()
-  basedir := util.Basedir()
+  env := martini.Env
 
   for _, ext := range acceptExtnameForConfig {
-    path := filepath.Join(basedir, configDir, env + "." + ext)
+    path := filepath.Join(BaseDir, configDir, env + "." + ext)
 
     if exists(path) {
       data, err := ioutil.ReadFile(path)

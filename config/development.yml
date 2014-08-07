@@ -1,0 +1,8 @@
+server:
+  host: localhost
+  port: 9000
+  secret: dxxeQUOx5SPQMgdeoi8JTSKj1fRnFA6G
+
+database:
+  type: sqlite3
+  path: /tmp/development.sqlite

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sign up | maji.moe</title>
+</head>
+<body>
+  <a href="/">Home</a>
+  <form action="/signup" method="post">
+    {{ mapValue .Errors "username" }}
+    <input type="text" name="username" placeholder="Username">
+    {{ mapValue .Errors "password" }}
+    <input type="password" name="password" placeholder="Password">
+    {{ mapValue .Errors "confirm" }}
+    <input type="password" name="confirm" placeholder="Password confirm">
+    {{ mapValue .Errors "email" }}
+    <input type="email" name="email" placeholder="Email">
+    <button type="submit">Sign up</button>
+  </form>
+</body>
+</html>
