@@ -17,6 +17,7 @@ type (
     Activated bool
     DisplayName string
     ActivatedToken string
+    LoggedIn bool `db:"-"`
   }
 
   Domain struct {

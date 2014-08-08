@@ -45,19 +45,22 @@ func (form UserCreateForm) Validate(errors binding.Errors, req *http.Request) bi
   return errors
 }
 
-func UserNew(r render.Render, currentUser CurrentUser) {
-  if currentUser.LoggedIn {
-    r.Redirect("/users/" + currentUser.Username)
+func UserNew(r render.Render, user User, csrf *CsrfToken) {
+  if user.LoggedIn {
+    r.Redirect("/users/" + user.Username)
     return
   }
 
-  r.HTML(http.StatusOK, "users/new", nil)
+  r.HTML(http.StatusOK, "users/new", map[string]interface{}{
+    "Token": csrf.GetToken(),
+  })
 }
 
-func UserCreate(form UserCreateForm, r render.Render, errors binding.Errors, s sessions.Session) {
+func UserCreate(form UserCreateForm, r render.Render, errors binding.Errors, s sessions.Session, csrf *CsrfToken) {
   if errors != nil {
     r.HTML(http.StatusBadRequest, "users/new", map[string]interface{}{
       "Errors": formatErr(errors),
+      "Token": csrf.GetToken(),
     })
     return
   }
@@ -79,11 +82,12 @@ func UserCreate(form UserCreateForm, r render.Render, errors binding.Errors, s s
 
     r.HTML(http.StatusBadRequest, "users/new", map[string]interface{}{
       "Errors": formatErr(errors),
+      "Token": csrf.GetToken(),
     })
     return
   }
 
-  password, err := bcrypt.GenerateFromPassword([]byte(form.Password), 10)
+  password, err := generatePassword(form.Password)
   if err != nil {
     r.HTML(http.StatusInternalServerError, "errors/500", err)
     return
@@ -99,7 +103,6 @@ func UserCreate(form UserCreateForm, r render.Render, errors binding.Errors, s s
     CreatedAt: now,
     UpdatedAt: now,
     Activated: false,
-    DisplayName: form.Username,
     ActivatedToken: token,
   }
 
@@ -113,9 +116,13 @@ func UserCreate(form UserCreateForm, r render.Render, errors binding.Errors, s s
   r.Redirect("/users/" + user.Username)
 }
 
-func UserShow(r render.Render, params martini.Params, currentUser CurrentUser) {
+func generatePassword(password string) ([]byte, error) {
+  return bcrypt.GenerateFromPassword([]byte(password), 10)
+}
+
+func UserShow(r render.Render, params martini.Params, currentUser User) {
   var user User
-  err := DbMap.SelectOne(&user, "SELECT * FROM users WHERE Username=?", params["user_id"])
+  err := DbMap.SelectOne(&user, "SELECT * FROM users WHERE Username=?", params["id"])
 
   if err != nil {
     r.HTML(http.StatusNotFound, "errors/404", err)
@@ -128,25 +135,64 @@ func UserShow(r render.Render, params martini.Params, currentUser CurrentUser) {
   })
 }
 
-func UserEdit(r render.Render, currentUser CurrentUser) {
-  if !currentUser.LoggedIn {
-    r.Redirect("/login")
-    return
-  }
-
+func UserEdit(r render.Render, user User, csrf *CsrfToken) {
   r.HTML(http.StatusOK, "users/edit", map[string]interface{}{
-    "User": currentUser,
+    "Token": csrf.GetToken(),
+    "User": user,
   })
 }
 
-func UserUpdate() {
-  //
+type UserUpdateForm struct {
+  DisplayName string `form:"display_name"`
+  Password string `form:"password"`
+  Confirm string `form:"confirm"`
 }
 
-func UserDestroy() {
-  //
+func (form UserUpdateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
+  if form.Password != "" {
+    passwordLen := len(form.Password)
+    if passwordLen > 50 || passwordLen < 6 {
+      errors.Add([]string{"password"}, "FormatError", "The length of password must between 6 ~ 50.")
+    }
+
+    if form.Password != form.Confirm {
+      errors.Add([]string{"confirm"}, "ContentError", "Password confirmation doesn't match.")
+    }
+  }
+
+  return errors
 }
 
-func UserConfirm(r render.Render) {
-  // r.Redirect("/users/")
+func UserUpdate(form UserUpdateForm, user User, r render.Render, errors binding.Errors, csrf *CsrfToken) {
+  if errors != nil {
+    r.HTML(http.StatusBadRequest, "users/edit", map[string]interface{}{
+      "Errors": formatErr(errors),
+      "Token": csrf.GetToken(),
+      "User": user,
+    })
+    return
+  }
+
+  password, err := generatePassword(form.Password)
+  if err != nil {
+    r.HTML(http.StatusInternalServerError, "errors/500", err)
+    return
+  }
+
+  user.DisplayName = form.DisplayName
+  user.Password = string(password)
+
+  _, err = DbMap.Update(&user)
+  if err != nil {
+    panic(err)
+    r.HTML(http.StatusInternalServerError, "errors/500", err)
+    return
+  }
+
+  r.Redirect("/settings/profile")
+}
+
+func UserDestroy(user User, r render.Render, s sessions.Session, params martini.Params) {
+  s.Delete("UserId")
+  r.Redirect("/")
 }

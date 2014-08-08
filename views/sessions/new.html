@@ -6,11 +6,12 @@
 </head>
 <body>
   <a href="/">Home</a>
-  <form action="/login" method="post">
+  <form action="/login" method="POST">
     {{ mapValue .Errors "login" }}
     <input type="text" name="login" placeholder="Username / Email">
     {{ mapValue .Errors "password" }}
     <input type="password" name="password" placeholder="Password">
+    <input type="hidden" name="_csrf" value="{{ .Token }}">
     <button type="submit">Log in</button>
   </form>
 </body>

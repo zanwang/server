@@ -1,1 +1,19 @@
 Edit Profile
+
+<form action="/settings/profile" method="POST">
+  {{ mapValue .Errors "display_name" }}
+  <input type="text" name="display_name" placeholder="Name" value="{{ .User.DisplayName }}">
+  {{ mapValue .Errors "password" }}
+  <input type="password" name="password" placeholder="Change password">
+  {{ mapValue .Errors "confirm" }}
+  <input type="password" name="confirm" placeholder="Password confirm">
+  <input type="hidden" name="_csrf" value="{{ .Token }}">
+  <input type="hidden" name="_method" value="PUT">
+  <button type="submit">Save</button>
+</form>
+
+<form action="/users/{{ .User.Username }}" method="POST">
+  <input type="hidden" name="_csrf" value="{{ .Token }}">
+  <input type="hidden" name="_method" value="DELETE">
+  <button type="submit">Delete my account</button>
+</form>
