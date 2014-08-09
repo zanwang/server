@@ -6,14 +6,14 @@
 </head>
 <body>
   <a href="/">Home</a>
-  <form action="/signup" method="POST">
-    {{ mapValue .Errors "username" }}
+  <form action="/users" method="POST">
+    {{ map .Errors "username" }}
     <input type="text" name="username" placeholder="Username">
-    {{ mapValue .Errors "password" }}
+    {{ map .Errors "password" }}
     <input type="password" name="password" placeholder="Password">
-    {{ mapValue .Errors "confirm" }}
+    {{ map .Errors "confirm" }}
     <input type="password" name="confirm" placeholder="Password confirm">
-    {{ mapValue .Errors "email" }}
+    {{ map .Errors "email" }}
     <input type="email" name="email" placeholder="Email">
     <input type="hidden" name="_csrf" value="{{ .Token }}">
     <button type="submit">Sign up</button>
