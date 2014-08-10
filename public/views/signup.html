@@ -1,0 +1,11 @@
+<a ui-sref="app">Back</a>
+
+<form name="signupForm" ng-submit="signup()" novalidate>
+  <input type="text" name="name" ng-model="name" required ng-minlength="3" ng-maxlength="20">
+  <input type="password" name="password" ng-model="password" required ng-minlength="6" ng-maxlength="50">
+  <input type="password" name="confirm" ng-model="confirm" required equal-to="password">
+  <input type="email" name="email" ng-model="email" required>
+  <button name="submit" ng-disabled="signupForm.$invalid">Sign up</button>
+</form>
+
+<a ui-sref="login">Log in</a>

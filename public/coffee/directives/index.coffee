@@ -1,0 +1,1 @@
+require './equal_to'

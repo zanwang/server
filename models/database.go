@@ -27,6 +27,7 @@ func Load(conf *config.Config) *gorp.DbMap {
 	dbMap.AddTableWithName(User{}, "users").SetKeys(true, "id")
 	dbMap.AddTableWithName(Domain{}, "domains").SetKeys(true, "id")
 	dbMap.AddTableWithName(Record{}, "records").SetKeys(true, "id")
+	dbMap.AddTableWithName(Token{}, "tokens").SetKeys(true, "id")
 
 	// Create tables
 	if err = dbMap.CreateTablesIfNotExists(); err != nil {

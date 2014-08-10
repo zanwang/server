@@ -1,9 +1,11 @@
 gulp = require 'gulp'
-$ = require( 'gulp-load-plugins' )()
+$ = require('gulp-load-plugins')()
 nib = require 'nib'
 browserify = require 'browserify'
 source = require 'vinyl-source-stream'
-coffeeify = require 'coffee-reactify'
+stringify = require 'stringify'
+coffeeify = require 'coffeeify'
+path = require 'path'
 
 filterMinifiedFiles = $.filter (file) ->
   extname = path.extname file.path
@@ -13,7 +15,7 @@ filterMinifiedFiles = $.filter (file) ->
 
 gulp.task 'stylus', ->
   gulp.src 'public/styl/*.styl'
-    .pipe $.filter ( file ) ->
+    .pipe $.filter (file) ->
       !/\/_/.test file.path
     .pipe $.stylus
       use: [nib()]
@@ -21,22 +23,24 @@ gulp.task 'stylus', ->
 
 gulp.task 'browserify', ->
   browserify
-    extensions: ['.coffee', '.cjsx']
+    extensions: ['.coffee', '.html']
     debug: true
+  .transform stringify ['.html']
   .transform coffeeify
-  .require './public/coffee/home.coffee', entry : true
+  .require './public/coffee/app.coffee', entry : true
   .bundle()
-  .pipe source 'home.js'
+  .pipe source 'app.js'
   .pipe gulp.dest 'public/js'
 
-gulp.task 'uglify', ['browserify'], ->
+gulp.task 'minify-js', ['browserify'], ->
   gulp.src 'public/js/**/*.js'
     .pipe filterMinifiedFiles
+    .pipe $.ngAnnotate()
     .pipe $.uglify()
     .pipe $.rename suffix: '.min'
     .pipe gulp.dest 'public/js'
 
-gulp.task 'cssmin', ['stylus'], ->
+gulp.task 'minify-css', ['stylus'], ->
   gulp.src 'public/css/*.css'
     .pipe filterMinifiedFiles
     .pipe $.minifyCss()
@@ -45,7 +49,7 @@ gulp.task 'cssmin', ['stylus'], ->
 
 gulp.task 'watch', ->
   gulp.watch 'public/styl/**/*.styl', ['stylus']
-  gulp.watch 'public/coffee/**/*.coffee', ['browserify']
+  gulp.watch [ 'public/coffee/**/*.coffee', 'public/views/**/*.html' ], ['browserify']
 
 gulp.task 'clean-css', ->
   gulp.src 'public/css/**/*.css', read: false
@@ -56,5 +60,5 @@ gulp.task 'clean-js', ->
     .pipe $.rimraf()
 
 gulp.task 'clean', ['clean-css', 'clean-js']
-gulp.task 'build', ['uglify', 'cssmin']
+gulp.task 'build', ['minify-js', 'minify-css']
 gulp.task 'default', ['build']
