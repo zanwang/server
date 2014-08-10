@@ -26,9 +26,16 @@ func (form *TokenCreateForm) Validate(errors binding.Errors, req *http.Request) 
 	return errors
 }
 
-func TokenCreate(form TokenCreateForm, r render.Render, errors binding.Errors, dbMap *gorp.DbMap, token *models.Token) {
-	if errors != nil {
-		r.JSON(http.StatusBadRequest, formatErr(errors))
+func TokenCreate(form TokenCreateForm, r render.Render, dbMap *gorp.DbMap, token *models.Token) {
+	var user models.User
+
+	if err := dbMap.SelectOne(&user, "SELECT id, password FROM users WHERE name=? OR email=?", form.Login, form.Login); err != nil {
+		r.Status(http.StatusNotFound)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.Password)); err != nil {
+		r.Status(http.StatusUnauthorized)
 		return
 	}
 
@@ -40,20 +47,6 @@ func TokenCreate(form TokenCreateForm, r render.Render, errors binding.Errors, d
 			r.JSON(http.StatusCreated, token)
 		}
 
-		return
-	}
-
-	var user models.User
-
-	if err := dbMap.SelectOne(&user, "SELECT id, password FROM users WHERE name=? OR email=?", form.Login, form.Login); err != nil {
-		errors := newErr([]string{"common"}, "404", "User does not exist")
-		r.JSON(http.StatusBadRequest, formatErr(errors))
-		return
-	}
-
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.Password)); err != nil {
-		errors := newErr([]string{"common"}, "401", "Unauthorized")
-		r.JSON(http.StatusUnauthorized, formatErr(errors))
 		return
 	}
 
@@ -69,10 +62,12 @@ func TokenCreate(form TokenCreateForm, r render.Render, errors binding.Errors, d
 	r.JSON(http.StatusCreated, token)
 }
 
-func TokenDestroy(dbMap *gorp.DbMap, r render.Render, token *models.Token) {
+func TokenDestroy(dbMap *gorp.DbMap, res http.ResponseWriter, token *models.Token) {
 	if count, err := dbMap.Delete(token); count > 0 {
-		r.Status(http.StatusNoContent)
-	} else {
+		res.WriteHeader(http.StatusNoContent)
+	} else if err != nil {
 		panic(err)
+	} else {
+		res.WriteHeader(http.StatusNotFound)
 	}
 }

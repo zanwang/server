@@ -3,12 +3,16 @@ package controllers
 import (
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/martini-contrib/binding"
 )
 
 var (
-	rEmail = regexp.MustCompile(".+@.+\\..+")
+	rEmail  = regexp.MustCompile(".+@.+\\..+")
+	rIP     = regexp.MustCompile("(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])")
+	rIPv6   = regexp.MustCompile("([0-9a-f]{1,4}:){7}([0-9a-f]){1,4}")
+	rDomain = regexp.MustCompile("\\.[a-zA-Z]{2,}$")
 )
 
 // Validation stores the pointer of errors
@@ -49,9 +53,43 @@ func (v *Validator) str() string {
 		return x
 	case *string:
 		return *x
+	case int:
+		return strconv.Itoa(x)
+	case *int:
+		return strconv.Itoa(*x)
+	case int64:
+		return strconv.FormatInt(x, 10)
+	case *int64:
+		return strconv.FormatInt(*x, 10)
 	}
 
 	return ""
+}
+
+func (v *Validator) int() int {
+	var num int
+	var err error
+
+	switch x := v.value.(type) {
+	case string:
+		num, err = strconv.Atoi(x)
+	case *string:
+		num, err = strconv.Atoi(*x)
+	case int:
+		num = x
+	case *int:
+		num = *x
+	case int64:
+		num = int(x)
+	case *int64:
+		num = int(*x)
+	}
+
+	if err != nil {
+		panic(err)
+	}
+
+	return num
 }
 
 func (v *Validator) err(code string, msg string) {
@@ -100,7 +138,7 @@ func (v *Validator) MaxLength(length int, msg string) *Validator {
 func (v *Validator) Length(min int, max int, msg string) *Validator {
 	if len := v.len(); v.str() != "" && (len > max || len < min) {
 		if msg == "" {
-			msg = "Length isn't between " + strconv.Itoa(min) + " and " + strconv.Itoa(max)
+			msg = "Length should be between " + strconv.Itoa(min) + " and " + strconv.Itoa(max)
 		}
 
 		v.err("113", msg)
@@ -117,6 +155,133 @@ func (v *Validator) Email(msg string) *Validator {
 		}
 
 		v.err("114", msg)
+	}
+
+	return v
+}
+
+func (v *Validator) Min(num int, msg string) *Validator {
+	if v.int() > num {
+		if msg == "" {
+			msg = "Minimum value is " + strconv.Itoa(num)
+		}
+
+		v.err("115", msg)
+	}
+
+	return v
+}
+
+func (v *Validator) Max(num int, msg string) *Validator {
+	if v.int() > num {
+		if msg == "" {
+			msg = "Maximum value is " + strconv.Itoa(num)
+		}
+
+		v.err("116", msg)
+	}
+
+	return v
+}
+
+func (v *Validator) Within(min int, max int, msg string) *Validator {
+	num := v.int()
+
+	if num > max || num < min {
+		if msg == "" {
+			msg = "Value should be between " + strconv.Itoa(min) + "~" + strconv.Itoa(max)
+		}
+
+		v.err("117", msg)
+	}
+
+	return v
+}
+
+func (v *Validator) Without(min int, max int, msg string) *Validator {
+	num := v.int()
+
+	if num <= max || num >= min {
+		if msg == "" {
+			msg = "Value should be not between " + strconv.Itoa(min) + "~" + strconv.Itoa(max)
+		}
+
+		v.err("118", msg)
+	}
+
+	return v
+}
+
+func (v *Validator) IsIn(arr []string, msg string) *Validator {
+	var inarr bool
+	str := v.str()
+
+	for _, x := range arr {
+		if x == str {
+			inarr = true
+			break
+		}
+	}
+
+	if !inarr {
+		if msg == "" {
+			msg = "Value should be one of [" + strings.Join(arr, ", ") + "]"
+		}
+
+		v.err("119", msg)
+	}
+
+	return v
+}
+
+func (v *Validator) NotIn(arr []string, msg string) *Validator {
+	str := v.str()
+
+	for _, x := range arr {
+		if x == str {
+			if msg == "" {
+				msg = "Value should not be one of [" + strings.Join(arr, ", ") + "]"
+			}
+
+			v.err("120", msg)
+			break
+		}
+	}
+
+	return v
+}
+
+func (v *Validator) IP(msg string) *Validator {
+	if v.str() != "" && !rIP.MatchString(v.str()) {
+		if msg == "" {
+			msg = "IP is invalid"
+		}
+
+		v.err("121", msg)
+	}
+
+	return v
+}
+
+func (v *Validator) IPv6(msg string) *Validator {
+	if v.str() != "" && !rIPv6.MatchString(v.str()) {
+		if msg == "" {
+			msg = "IPv6 is invalid"
+		}
+
+		v.err("122", msg)
+	}
+
+	return v
+}
+
+func (v *Validator) Domain(msg string) *Validator {
+	if v.str() != "" && !rIPv6.MatchString(v.str()) {
+		if msg == "" {
+			msg = "Domain is invalid"
+		}
+
+		v.err("123", msg)
 	}
 
 	return v

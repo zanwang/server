@@ -28,7 +28,7 @@ func newErr(fields []string, code string, msg string) binding.Errors {
 	return errors
 }
 
-func formatErr(errors interface{}) map[string]interface{} {
+func FormatErr(errors interface{}) map[string]interface{} {
 	result := make(map[string][]APIError)
 
 	switch errors := errors.(type) {

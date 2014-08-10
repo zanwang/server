@@ -24,13 +24,13 @@ func main() {
 	dbMap := models.Load(config)
 	defer dbMap.Db.Close()
 
-	// Createa a classic martini
+	// Create a classic martini
 	m := martini.Classic()
 	host := config.Server.Host
 	port := config.Server.Port
 	secret := config.Server.Secret
 
-	// Mapping
+	// Basic setup
 	m.Map(config)
 	m.Map(dbMap)
 
@@ -46,13 +46,11 @@ func main() {
 	m.Use(method.Override())
 
 	// Routes
-	m.Get("/", func(r render.Render) {
-		r.HTML(200, "index", nil)
-	})
-
+	m.Get("/", controllers.Home)
 	m.Get("/app", controllers.App)
 	m.Get("/login", controllers.App)
 	m.Get("/signup", controllers.App)
+	m.Get("/activation/:token", controllers.UserActivate)
 
 	m.Group("/api/v1", func(r martini.Router) {
 		r.Group("/tokens", func(r martini.Router) {
@@ -72,46 +70,43 @@ func main() {
 
 				r.Group("", func(r martini.Router) {
 					// PUT /api/v1/users/:user_id
-					r.Put("", middlewares.Validate(controllers.UserUpdateForm{}), controllers.UserUpdate)
+					r.Put("", middlewares.CheckCurrentUser, middlewares.Validate(controllers.UserUpdateForm{}), controllers.UserUpdate)
 					// DELETE /api/v1/users/:user_id
-					r.Delete("", controllers.UserDestroy)
+					r.Delete("", middlewares.CheckCurrentUser, controllers.UserDestroy)
 					// GET /api/v1/users/:user_id/domains
 					r.Get("/domains", controllers.DomainList)
 					// POST /api/v1/users/:user_id/domains
-					r.Post("/domains", controllers.DomainCreate)
-				}, middlewares.NeedAuthorization)
+					r.Post("/domains", middlewares.CheckCurrentUser, middlewares.Validate(controllers.DomainCreateForm{}), controllers.DomainCreate)
+				}, middlewares.NeedAuthorization, middlewares.GetUser)
 			}, middlewares.CheckToken)
 		})
 
 		r.Group("/domains", func(r martini.Router) {
 			r.Group("/:domain_id", func(r martini.Router) {
 				// GET /api/v1/domains/:domain_id
-				r.Get("", controllers.DomainShow)
+				r.Get("", middlewares.CheckOwnershipOfDomain(false), controllers.DomainShow)
 				// PUT /api/v1/domains/:domain_id
-				r.Put("", controllers.DomainUpdate)
+				r.Put("", middlewares.CheckOwnershipOfDomain(true), middlewares.Validate(controllers.DomainUpdateForm{}), controllers.DomainUpdate)
 				// DELETE /api/v1/domains/:domain_id
-				r.Delete("", controllers.DomainDestroy)
+				r.Delete("", middlewares.CheckOwnershipOfDomain(true), controllers.DomainDestroy)
 				// GET /api/v1/domain/:domain_id/records
-				r.Get("/records", controllers.RecordList)
+				r.Get("/records", middlewares.CheckOwnershipOfDomain(false), controllers.RecordList)
 				// POST /api/v1/domain/:domain_id/records
-				r.Post("/records", controllers.RecordCreate)
-			})
+				r.Post("/records", middlewares.CheckOwnershipOfDomain(true), middlewares.Validate(controllers.RecordCreateForm{}), controllers.RecordCreate)
+			}, middlewares.GetDomain)
 		}, middlewares.CheckToken, middlewares.NeedAuthorization)
 
 		r.Group("/records", func(r martini.Router) {
 			r.Group("/:record_id", func(r martini.Router) {
 				// GET /api/v1/records/:record_id
-				r.Get("", controllers.RecordShow)
+				r.Get("", middlewares.CheckOwnershipOfRecord(false), controllers.RecordShow)
 				// PUT /api/v1/records/:record_id
-				r.Put("", controllers.RecordUpdate)
+				r.Put("", middlewares.CheckOwnershipOfRecord(true), middlewares.Validate(controllers.RecordUpdateForm{}), controllers.RecordUpdate)
 				// DELETE /api/v1/records/:record_id
-				r.Delete("", controllers.RecordDestroy)
-			})
+				r.Delete("", middlewares.CheckOwnershipOfRecord(true), controllers.RecordDestroy)
+			}, middlewares.GetRecord)
 		}, middlewares.CheckToken, middlewares.NeedAuthorization)
 	})
-
-	// Serve static files
-	m.Use(martini.Static("public"))
 
 	// Start server
 	log.Printf("Listening on http://%s:%d", host, port)

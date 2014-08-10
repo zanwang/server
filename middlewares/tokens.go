@@ -36,3 +36,17 @@ func NeedAuthorization(token *models.Token, res http.ResponseWriter) {
 		res.WriteHeader(http.StatusUnauthorized)
 	}
 }
+
+/*
+func CheckCurrentUser(params martini.Params, token *models.Token, res http.ResponseWriter) {
+	if userID, err := strconv.ParseInt(params["user_id"], 10, 64); err != nil || userID != token.UserID {
+		res.WriteHeader(http.StatusForbidden)
+	}
+}
+*/
+
+func CheckCurrentUser(user *models.User, res http.ResponseWriter) {
+	if !user.LoggedIn {
+		res.WriteHeader(http.StatusForbidden)
+	}
+}

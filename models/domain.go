@@ -27,3 +27,11 @@ func (data *Domain) PreUpdate(s gorp.SqlExecutor) error {
 	data.UpdatedAt = time.Now().UnixNano()
 	return nil
 }
+
+func (data *Domain) PreDelete(s gorp.SqlExecutor) error {
+	if _, err := s.Exec("DELETE FROM records WHERE domain_id=?", data.ID); err != nil {
+		return err
+	}
+
+	return nil
+}

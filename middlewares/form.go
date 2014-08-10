@@ -6,6 +6,8 @@ import (
 
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
+	"github.com/martini-contrib/render"
+	"github.com/tommy351/maji.moe/controllers"
 )
 
 func Validate(obj interface{}, ifacePtr ...interface{}) martini.Handler {
@@ -30,5 +32,14 @@ func Validate(obj interface{}, ifacePtr ...interface{}) martini.Handler {
 		} else {
 			context.Invoke(binding.Form(obj, ifacePtr...))
 		}
+
+		context.Invoke(FormErrorHandler)
+	}
+}
+
+func FormErrorHandler(errors binding.Errors, r render.Render) {
+	if errors != nil {
+		r.JSON(http.StatusBadRequest, controllers.FormatErr(errors))
+		return
 	}
 }

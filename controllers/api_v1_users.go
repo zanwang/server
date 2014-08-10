@@ -27,16 +27,11 @@ func (form *UserCreateForm) Validate(errors binding.Errors, req *http.Request) b
 	return errors
 }
 
-func UserCreate(form UserCreateForm, r render.Render, errors binding.Errors, dbMap *gorp.DbMap) {
-	if errors != nil {
-		r.JSON(http.StatusBadRequest, formatErr(errors))
-		return
-	}
-
+func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap) {
 	var user models.User
 
-	if err := dbMap.SelectOne(&user, "SELECT * FROM users WHERE name=? OR email=?", form.Name, form.Email); err == nil {
-		errors = binding.Errors{}
+	if err := dbMap.SelectOne(&user, "SELECT name,email FROM users WHERE name=? OR email=?", form.Name, form.Email); err == nil {
+		errors := binding.Errors{}
 
 		if form.Name == user.Name {
 			errors.Add([]string{"name"}, "210", "User name has been taken")
@@ -46,7 +41,7 @@ func UserCreate(form UserCreateForm, r render.Render, errors binding.Errors, dbM
 			errors.Add([]string{"email"}, "211", "Email has been taken")
 		}
 
-		r.JSON(http.StatusBadRequest, formatErr(errors))
+		r.JSON(http.StatusBadRequest, FormatErr(errors))
 		return
 	}
 
@@ -65,17 +60,28 @@ func UserCreate(form UserCreateForm, r render.Render, errors binding.Errors, dbM
 	r.JSON(http.StatusCreated, user)
 }
 
-func UserShow(params martini.Params, r render.Render, dbMap *gorp.DbMap, token *models.Token) {
-	var user models.User
-	userID := toint64(params["user_id"])
+func UserShow(r render.Render, user *models.User) {
+	/*
+		var user models.User
+		userID := toint64(params["user_id"])
 
-	if err := dbMap.SelectOne(&user, "SELECT * FROM users WHERE id=?", userID); err != nil {
-		errors := newErr([]string{"common"}, "404", "User does not exist")
-		r.JSON(http.StatusNotFound, formatErr(errors))
-		return
-	}
+		if err := dbMap.SelectOne(&user, "SELECT * FROM users WHERE id=?", userID); err != nil {
+			r.Status(http.StatusNotFound)
+			return
+		}
 
-	if token.UserID == userID {
+		if token.UserID == userID {
+			r.JSON(http.StatusOK, user)
+		} else {
+			r.JSON(http.StatusOK, map[string]interface{}{
+				"id":           user.ID,
+				"name":         user.Name,
+				"display_name": user.DisplayName,
+				"created_at":   user.CreatedAt,
+				"updated_at":   user.UpdatedAt,
+			})
+		}*/
+	if user.LoggedIn {
 		r.JSON(http.StatusOK, user)
 	} else {
 		r.JSON(http.StatusOK, map[string]interface{}{
@@ -105,26 +111,14 @@ func (form *UserUpdateForm) Validate(errors binding.Errors, req *http.Request) b
 	return errors
 }
 
-func UserUpdate(form UserUpdateForm, errors binding.Errors, r render.Render, dbMap *gorp.DbMap, params martini.Params, token *models.Token) {
-	if errors != nil {
-		r.JSON(http.StatusBadRequest, formatErr(errors))
-		return
-	}
+func UserUpdate(form UserUpdateForm, r render.Render, db *gorp.DbMap, user *models.User) {
+	/*
+		var user models.User
 
-	var user models.User
-	userID := toint64(params["user_id"])
-
-	if err := dbMap.SelectOne(&user, "SELECT * FROM users WHERE id=?", userID); err != nil {
-		errors := newErr([]string{"common"}, "404", "User does not exist")
-		r.JSON(http.StatusBadRequest, formatErr(errors))
-		return
-	}
-
-	if userID != token.UserID {
-		errors := newErr([]string{"common"}, "403", "Forbidden")
-		r.JSON(http.StatusForbidden, formatErr(errors))
-		return
-	}
+		if err := dbMap.SelectOne(&user, "SELECT * FROM users WHERE id=?", params["user_id"]); err != nil {
+			r.Status(http.StatusNotFound)
+			return
+		}*/
 
 	if form.Name != "" {
 		user.Name = form.Name
@@ -140,27 +134,27 @@ func UserUpdate(form UserUpdateForm, errors binding.Errors, r render.Render, dbM
 		user.Email = form.Email
 	}
 
-	if count, err := dbMap.Update(&user); count > 0 {
+	if count, err := db.Update(user); count > 0 {
 		r.JSON(http.StatusOK, user)
 	} else {
 		panic(err)
 	}
 }
 
-func UserDestroy(r render.Render, dbMap *gorp.DbMap, params martini.Params, token *models.Token) {
-	userID := toint64(params["user_id"])
+func UserDestroy(res http.ResponseWriter, db *gorp.DbMap, user *models.User) {
+	/*
+		userID := toint64(params["user_id"])
+		user := models.User{ID: userID}*/
 
-	if userID != token.UserID {
-		errors := newErr([]string{"common"}, "403", "Forbidden")
-		r.JSON(http.StatusForbidden, formatErr(errors))
-		return
-	}
-
-	user := models.User{ID: userID}
-
-	if count, err := dbMap.Delete(&user); count > 0 {
-		r.Status(http.StatusNoContent)
-	} else {
+	if count, err := db.Delete(user); count > 0 {
+		res.WriteHeader(http.StatusNoContent)
+	} else if err != nil {
 		panic(err)
+	} else {
+		res.WriteHeader(http.StatusNotFound)
 	}
+}
+
+func UserActivate(params martini.Params, db *gorp.DbMap) {
+	//
 }

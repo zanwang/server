@@ -17,6 +17,7 @@ type User struct {
 	UpdatedAt       int64  `db:"updated_at" json:"updated_at"`
 	Activated       bool   `db:"activated" json:"activated"`
 	ActivationToken string `db:"activation_token" json:"-"`
+	LoggedIn        bool   `db:"-" json:"-"`
 }
 
 func (data *User) PreInsert(s gorp.SqlExecutor) error {
@@ -28,5 +29,13 @@ func (data *User) PreInsert(s gorp.SqlExecutor) error {
 
 func (data *User) PreUpdate(s gorp.SqlExecutor) error {
 	data.UpdatedAt = time.Now().UnixNano()
+	return nil
+}
+
+func (data *User) PreDelete(s gorp.SqlExecutor) error {
+	if _, err := s.Exec("DELETE FROM domains WHERE user_id=?", data.ID); err != nil {
+		return err
+	}
+
 	return nil
 }
