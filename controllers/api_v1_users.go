@@ -45,13 +45,13 @@ func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap) {
 		return
 	}
 
-	// TODO gravatar avatar
 	user = models.User{
 		Name:            form.Name,
 		Password:        generatePassword(form.Password),
 		Email:           form.Email,
 		Activated:       false,
 		ActivationToken: uniuri.New(),
+		PasswordSet:     true,
 	}
 
 	user.Gravatar()
@@ -103,6 +103,7 @@ func UserUpdate(form UserUpdateForm, r render.Render, db *gorp.DbMap, user *mode
 
 	if form.Password != "" {
 		user.Password = generatePassword(form.Password)
+		user.PasswordSet = true
 	}
 
 	if form.Email != "" {

@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/coopernurse/gorp"
 	"github.com/go-martini/martini"
@@ -24,7 +23,6 @@ func CheckToken(c martini.Context, dbMap *gorp.DbMap, req *http.Request) {
 
 	// Update token
 	if token.Authorized {
-		token.UpdatedAt = time.Now().UnixNano()
 		if _, err := dbMap.Update(&token); err != nil {
 			panic(err)
 		}
@@ -36,14 +34,6 @@ func NeedAuthorization(token *models.Token, res http.ResponseWriter) {
 		res.WriteHeader(http.StatusUnauthorized)
 	}
 }
-
-/*
-func CheckCurrentUser(params martini.Params, token *models.Token, res http.ResponseWriter) {
-	if userID, err := strconv.ParseInt(params["user_id"], 10, 64); err != nil || userID != token.UserID {
-		res.WriteHeader(http.StatusForbidden)
-	}
-}
-*/
 
 func CheckCurrentUser(user *models.User, res http.ResponseWriter) {
 	if !user.LoggedIn {
