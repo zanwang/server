@@ -1,5 +1,5 @@
 angular = require 'angular'
 
-angular.module('app').controller 'LoginCtrl', ($scope, Token) ->
+angular.module('app').controller 'LoginCtrl', ($scope) ->
   $scope.login = ->
-    form = $scope.loginForm
+    return if $scope.loginForm.$invalid

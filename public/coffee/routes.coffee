@@ -1,10 +1,8 @@
 angular = require 'angular'
 
-angular.module('app').config ($stateProvider, $urlRouterProvider, $locationProvider, RestangularProvider) ->
+angular.module('app').config ($stateProvider, $urlRouterProvider, $locationProvider) ->
   $urlRouterProvider.otherwise '/app'
   $locationProvider.html5Mode true
-
-  RestangularProvider.setBaseUrl '/api/v1'
 
   $stateProvider
     .state 'app',

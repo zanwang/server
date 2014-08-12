@@ -19,3 +19,9 @@ func GetUser(c martini.Context, params martini.Params, db *gorp.DbMap, res http.
 
 	c.Map(&user)
 }
+
+func NeedActivation(user *models.User, res http.ResponseWriter) {
+	if !user.Activated {
+		res.WriteHeader(http.StatusForbidden)
+	}
+}

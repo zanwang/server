@@ -1,2 +1,0 @@
-require './token'
-require './user'

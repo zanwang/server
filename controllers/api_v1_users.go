@@ -45,6 +45,7 @@ func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap) {
 		return
 	}
 
+	// TODO gravatar avatar
 	user = models.User{
 		Name:            form.Name,
 		Password:        generatePassword(form.Password),
@@ -52,6 +53,8 @@ func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap) {
 		Activated:       false,
 		ActivationToken: uniuri.New(),
 	}
+
+	user.Gravatar()
 
 	if err := dbMap.Insert(&user); err != nil {
 		panic(err)
@@ -61,26 +64,6 @@ func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap) {
 }
 
 func UserShow(r render.Render, user *models.User) {
-	/*
-		var user models.User
-		userID := toint64(params["user_id"])
-
-		if err := dbMap.SelectOne(&user, "SELECT * FROM users WHERE id=?", userID); err != nil {
-			r.Status(http.StatusNotFound)
-			return
-		}
-
-		if token.UserID == userID {
-			r.JSON(http.StatusOK, user)
-		} else {
-			r.JSON(http.StatusOK, map[string]interface{}{
-				"id":           user.ID,
-				"name":         user.Name,
-				"display_name": user.DisplayName,
-				"created_at":   user.CreatedAt,
-				"updated_at":   user.UpdatedAt,
-			})
-		}*/
 	if user.LoggedIn {
 		r.JSON(http.StatusOK, user)
 	} else {
@@ -112,14 +95,6 @@ func (form *UserUpdateForm) Validate(errors binding.Errors, req *http.Request) b
 }
 
 func UserUpdate(form UserUpdateForm, r render.Render, db *gorp.DbMap, user *models.User) {
-	/*
-		var user models.User
-
-		if err := dbMap.SelectOne(&user, "SELECT * FROM users WHERE id=?", params["user_id"]); err != nil {
-			r.Status(http.StatusNotFound)
-			return
-		}*/
-
 	if form.Name != "" {
 		user.Name = form.Name
 	}
@@ -142,10 +117,6 @@ func UserUpdate(form UserUpdateForm, r render.Render, db *gorp.DbMap, user *mode
 }
 
 func UserDestroy(res http.ResponseWriter, db *gorp.DbMap, user *models.User) {
-	/*
-		userID := toint64(params["user_id"])
-		user := models.User{ID: userID}*/
-
 	if count, err := db.Delete(user); count > 0 {
 		res.WriteHeader(http.StatusNoContent)
 	} else if err != nil {
@@ -155,6 +126,26 @@ func UserDestroy(res http.ResponseWriter, db *gorp.DbMap, user *models.User) {
 	}
 }
 
-func UserActivate(params martini.Params, db *gorp.DbMap) {
-	//
+func UserActivate(params martini.Params, db *gorp.DbMap, r render.Render) {
+	var user models.User
+
+	if err := db.SelectOne(&user, "SELECT * FROM users WHERE activation_token=?", params["token"]); err != nil {
+		r.Status(http.StatusNotFound)
+		return
+	}
+
+	if user.Activated {
+		r.Status(http.StatusBadRequest)
+		return
+	}
+
+	user.Activated = true
+
+	if count, err := db.Update(&user); count > 0 {
+		r.Redirect("/app")
+	} else if err != nil {
+		panic(err)
+	} else {
+		r.Status(http.StatusNotFound)
+	}
 }

@@ -1,12 +1,12 @@
 angular = require 'angular'
 
-angular.module('app').controller 'SignupCtrl', ($scope, User) ->
+angular.module('app').controller 'SignupCtrl', ($scope, $http) ->
   $scope.signup = ->
     return if $scope.signupForm.$invalid
 
-    User.post
+    $http.post '/api/v1/users',
       name: $scope.name
-      email: $scope.email
       password: $scope.password
-    .then ->
-      console.log arguments
+      email: $scope.email
+    .success (data) ->
+      console.log data

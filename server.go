@@ -76,7 +76,7 @@ func main() {
 					// GET /api/v1/users/:user_id/domains
 					r.Get("/domains", controllers.DomainList)
 					// POST /api/v1/users/:user_id/domains
-					r.Post("/domains", middlewares.CheckCurrentUser, middlewares.Validate(controllers.DomainCreateForm{}), controllers.DomainCreate)
+					r.Post("/domains", middlewares.CheckCurrentUser, middlewares.NeedActivation, middlewares.Validate(controllers.DomainCreateForm{}), controllers.DomainCreate)
 				}, middlewares.NeedAuthorization, middlewares.GetUser)
 			}, middlewares.CheckToken)
 		})
@@ -105,6 +105,10 @@ func main() {
 				// DELETE /api/v1/records/:record_id
 				r.Delete("", middlewares.CheckOwnershipOfRecord(true), controllers.RecordDestroy)
 			}, middlewares.GetRecord)
+		}, middlewares.CheckToken, middlewares.NeedAuthorization)
+
+		r.Group("/emails", func(r martini.Router) {
+			r.Post("/resend", middlewares.Validate(controllers.EmailResendForm{}), controllers.EmailResend)
 		}, middlewares.CheckToken, middlewares.NeedAuthorization)
 	})
 

@@ -11,13 +11,6 @@ import (
 )
 
 func DomainList(params martini.Params, token *models.Token, r render.Render, db *gorp.DbMap, user *models.User) {
-	/*var user models.User
-
-	if err := dbMap.SelectOne(&user, "SELECT id FROM users WHERE id=?", params["user_id"]); err != nil {
-		r.Status(http.StatusNotFound)
-		return
-	}*/
-
 	var domains []models.Domain
 	var err error
 
@@ -70,19 +63,6 @@ func DomainCreate(form DomainCreateForm, db *gorp.DbMap, r render.Render, user *
 }
 
 func DomainShow(r render.Render, domain *models.Domain) {
-	/*
-		var domain models.Domain
-
-		if err := dbMap.SelectOne(&domain, "SELECT * FROM domains WHERE id=?", params["domain_id"]); err != nil {
-			r.Status(http.StatusNotFound)
-			return
-		}*/
-	/*
-		if domain.UserID != token.UserID && !domain.Public {
-			r.Status(http.StatusForbidden)
-			return
-		}
-	*/
 	r.JSON(http.StatusOK, domain)
 }
 
@@ -100,20 +80,6 @@ func (form *DomainUpdateForm) Validate(errors binding.Errors, req *http.Request)
 }
 
 func DomainUpdate(form DomainUpdateForm, r render.Render, db *gorp.DbMap, domain *models.Domain) {
-	/*
-		var domain models.Domain
-
-		if err := dbMap.SelectOne(&domain, "SELECT * FROM domains WHERE id=?", params["domain_id"]); err != nil {
-			r.Status(http.StatusNotFound)
-			return
-		}
-	*/
-	/*
-		if domain.UserID != token.UserID {
-			r.Status(http.StatusForbidden)
-			return
-		}
-	*/
 	if form.Name != "" {
 		domain.Name = form.Name
 	}
@@ -130,19 +96,6 @@ func DomainUpdate(form DomainUpdateForm, r render.Render, db *gorp.DbMap, domain
 }
 
 func DomainDestroy(res http.ResponseWriter, db *gorp.DbMap, domain *models.Domain) {
-	/*
-		var domain models.Domain
-
-		if err := dbMap.SelectOne(&domain, "SELECT id,user_id FROM domains WHERE id=?", params["domain_id"]); err != nil {
-			res.WriteHeader(http.StatusNotFound)
-			return
-		}*/
-	/*
-		if domain.UserID != token.UserID {
-			res.WriteHeader(http.StatusForbidden)
-			return
-		}
-	*/
 	if count, err := db.Delete(domain); count > 0 {
 		res.WriteHeader(http.StatusNoContent)
 	} else if err != nil {
