@@ -50,7 +50,7 @@ func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap) {
 		Password:        generatePassword(form.Password),
 		Email:           form.Email,
 		Activated:       false,
-		ActivationToken: uniuri.New(),
+		ActivationToken: uniuri.NewLen(32),
 		PasswordSet:     true,
 	}
 

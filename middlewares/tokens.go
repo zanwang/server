@@ -8,14 +8,14 @@ import (
 	"github.com/tommy351/maji.moe/models"
 )
 
-func CheckToken(c martini.Context, dbMap *gorp.DbMap, req *http.Request) {
+func CheckToken(c martini.Context, db *gorp.DbMap, req *http.Request) {
 	var token models.Token
 	header := req.Header.Get("X-Auth-Token")
 
-	if err := dbMap.SelectOne(&token, "SELECT * FROM tokens WHERE key=?", header); err != nil {
-		token.Authorized = true
-	} else {
-		token.Authorized = false
+	if header != "" {
+		if err := db.SelectOne(&token, "SELECT * FROM tokens WHERE key=?", header); err != nil {
+			token.Authorized = true
+		}
 	}
 
 	c.Map(&token)
@@ -23,7 +23,7 @@ func CheckToken(c martini.Context, dbMap *gorp.DbMap, req *http.Request) {
 
 	// Update token
 	if token.Authorized {
-		if _, err := dbMap.Update(&token); err != nil {
+		if _, err := db.Update(&token); err != nil {
 			panic(err)
 		}
 	}

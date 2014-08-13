@@ -16,7 +16,7 @@ import (
 	"github.com/tommy351/maji.moe/models"
 )
 
-func main() {
+func server() {
 	// Load configuration
 	config := config.Load()
 
@@ -57,8 +57,8 @@ func main() {
 			// POST /api/v1/tokens
 			r.Post("", middlewares.Validate(controllers.TokenCreateForm{}), controllers.TokenCreate)
 			// DELETE /api/v1/tokens
-			r.Delete("", middlewares.NeedAuthorization, controllers.TokenDestroy)
-		}, middlewares.CheckToken)
+			r.Delete("", middlewares.CheckToken, middlewares.NeedAuthorization, controllers.TokenDestroy)
+		})
 
 		r.Group("/users", func(r martini.Router) {
 			// POST /api/v1/users
@@ -115,4 +115,8 @@ func main() {
 	// Start server
 	log.Printf("Listening on http://%s:%d", host, port)
 	panic(http.ListenAndServe(host+":"+strconv.Itoa(port), m))
+}
+
+func main() {
+	server()
 }

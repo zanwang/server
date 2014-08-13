@@ -26,10 +26,10 @@ func (form *TokenCreateForm) Validate(errors binding.Errors, req *http.Request) 
 	return errors
 }
 
-func TokenCreate(form TokenCreateForm, r render.Render, dbMap *gorp.DbMap, token *models.Token) {
+func TokenCreate(form TokenCreateForm, r render.Render, db *gorp.DbMap) {
 	var user models.User
 
-	if err := dbMap.SelectOne(&user, "SELECT id, password FROM users WHERE name=? OR email=?", form.Login, form.Login); err != nil {
+	if err := db.SelectOne(&user, "SELECT id, password FROM users WHERE name=? OR email=?", form.Login, form.Login); err != nil {
 		r.Status(http.StatusNotFound)
 		return
 	}
@@ -39,24 +39,23 @@ func TokenCreate(form TokenCreateForm, r render.Render, dbMap *gorp.DbMap, token
 		return
 	}
 
-	// Update existing token
-	if token != nil {
-		if _, err := dbMap.Update(&token); err != nil {
-			panic(err)
-		} else {
-			r.JSON(http.StatusCreated, token)
+	var token models.Token
+
+	if err := db.SelectOne(&token, "SELECT * FROM tokens WHERE user_id=?", user.ID); err != nil {
+		// Create a token
+		token = models.Token{
+			UserID: user.ID,
+			Key:    uniuri.NewLen(32),
 		}
 
-		return
-	}
-
-	token = &models.Token{
-		UserID: user.ID,
-		Key:    uniuri.New(),
-	}
-
-	if err := dbMap.Insert(token); err != nil {
-		panic(err)
+		if err := db.Insert(&token); err != nil {
+			panic(err)
+		}
+	} else {
+		// Update the existing token
+		if _, err := db.Update(&token); err != nil {
+			panic(err)
+		}
 	}
 
 	r.JSON(http.StatusCreated, token)
