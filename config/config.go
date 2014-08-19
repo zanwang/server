@@ -12,15 +12,23 @@ import (
 // Config stores global configuration
 type Config struct {
 	Server struct {
-		Host   string
-		Port   int
-		Secret string
-	}
+		Host   string `yaml:"host"`
+		Port   int    `yaml:"port"`
+		Secret string `yaml:"secret"`
+	} `yaml:"server"`
 
 	Database struct {
-		Type string
-		Path string
-	}
+		Type string `yaml:"type"`
+		Path string `yaml:"path"`
+	} `yaml:"database"`
+
+	ReservedDomains []string `yaml:"reserved_domains"`
+
+	Mailgun struct {
+		Domain     string `yaml:"domain"`
+		PrivateKey string `yaml:"private_key"`
+		PublicKey  string `yaml:"public_key"`
+	} `yaml:"mailgun"`
 }
 
 const configDir = "config"

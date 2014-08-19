@@ -15,7 +15,6 @@ type User struct {
 	Name            string    `db:"name" json:"name"`
 	Password        string    `db:"password" json:"-"`
 	Email           string    `db:"email" json:"email"`
-	DisplayName     string    `db:"display_name" json:"display_name"`
 	Avatar          string    `db:"avatar" json:"avatar"`
 	CreatedAt       time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt       time.Time `db:"updated_at" json:"updated_at"`
@@ -50,8 +49,4 @@ func (data *User) Gravatar() {
 	io.WriteString(h, data.Email)
 
 	data.Avatar = "http://www.gravatar.com/avatar/" + hex.EncodeToString(h.Sum(nil))
-}
-
-func (data *User) SendActivationEmail() {
-	//
 }

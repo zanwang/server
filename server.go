@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/go-martini/martini"
-	"github.com/martini-contrib/method"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 	"github.com/tommy351/maji.moe/config"
@@ -24,6 +23,9 @@ func server() {
 	dbMap := models.Load(config)
 	defer dbMap.Db.Close()
 
+	// Load mailgun
+	mg := mail(config)
+
 	// Create a classic martini
 	m := martini.Classic()
 	host := config.Server.Host
@@ -33,6 +35,7 @@ func server() {
 	// Basic setup
 	m.Map(config)
 	m.Map(dbMap)
+	m.Map(mg)
 
 	// Middlewares
 	store := sessions.NewCookieStore([]byte(secret))
@@ -43,19 +46,25 @@ func server() {
 		Extensions: []string{".html", ".htm"},
 		Funcs:      []template.FuncMap{appHelpers},
 	}))
-	m.Use(method.Override())
 
 	// Routes
 	m.Get("/", controllers.Home)
 	m.Get("/app", controllers.App)
 	m.Get("/login", controllers.App)
 	m.Get("/signup", controllers.App)
+	m.Get("/forgot_password", controllers.App)
+	m.Get("/settings", controllers.App)
 	m.Get("/activation/:token", controllers.UserActivate)
+	m.NotFound(controllers.NotFound)
 
 	m.Group("/api/v1", func(r martini.Router) {
+		r.Get("", controllers.APIEntry)
+
 		r.Group("/tokens", func(r martini.Router) {
 			// POST /api/v1/tokens
 			r.Post("", middlewares.Validate(controllers.TokenCreateForm{}), controllers.TokenCreate)
+			// PUT /api/v1/tokens
+			r.Put("", middlewares.CheckToken, middlewares.NeedAuthorization, controllers.TokenDestroy)
 			// DELETE /api/v1/tokens
 			r.Delete("", middlewares.CheckToken, middlewares.NeedAuthorization, controllers.TokenDestroy)
 		})
@@ -77,8 +86,8 @@ func server() {
 					r.Get("/domains", controllers.DomainList)
 					// POST /api/v1/users/:user_id/domains
 					r.Post("/domains", middlewares.CheckCurrentUser, middlewares.NeedActivation, middlewares.Validate(controllers.DomainCreateForm{}), controllers.DomainCreate)
-				}, middlewares.NeedAuthorization, middlewares.GetUser)
-			}, middlewares.CheckToken)
+				})
+			}, middlewares.CheckToken, middlewares.NeedAuthorization, middlewares.GetUser)
 		})
 
 		r.Group("/domains", func(r martini.Router) {
@@ -109,7 +118,7 @@ func server() {
 
 		r.Group("/emails", func(r martini.Router) {
 			r.Post("/resend", middlewares.Validate(controllers.EmailResendForm{}), controllers.EmailResend)
-		}, middlewares.CheckToken, middlewares.NeedAuthorization)
+		})
 	})
 
 	// Start server

@@ -6,3 +6,13 @@ server:
 database:
   type: sqlite3
   path: /tmp/development.sqlite
+
+reserved_domains:
+  - www
+  - email
+  - api
+
+mailgun:
+  domain:
+  private_key:
+  public_key:

@@ -1,32 +1,69 @@
-#header-wrap
-  background: #fff
-  border-bottom: 1px solid color-border
-
 #header
   clearfix()
-  width: max-width
-  margin: 0 auto
-  padding: 25px 15px
+  padding: 30px 0 50px
 
-#logo-wrap
+#header-title-wrap
   float: left
 
-#main-nav
-  float: right
-  .btn
-    float: left
-    margin-left: 20px
+#header-title
+  font-weight: 300
+  font-size: 25px
+  line-height: header-height
 
-#banner
-  height: 450px
-  background: url(banner-background) color-yellow
-  background-attachment: fixed
+#user-link-wrap
+  float: right
   position: relative
 
-#banner-form
-  margin: auto
+#user-link
+  cursor: pointer
+  user-select: none
+
+#user-avatar
+  width: header-height
+  height: @width
+  border-radius: 50%
+  float: left
+  margin-right: 10px
+
+#user-name
+  float: left
+  color: color-text
+  text-decoration: none
+  line-height: header-height
+  white-space: nowrap
+
+#user-menu
   position: absolute
-  top: 0
-  left: 0
-  right: 0
-  bottom: 0
+  top: 100%
+  background: #fff
+  padding: 10px
+  margin-top: 10px
+  box-shadow: 0 3px 20px color-shadow
+  border-radius: 2px
+  display: none
+  z-index: 1000
+  &.active
+    display: block
+  &:before
+    content: ""
+    position: absolute
+    border-width: 8px
+    border-style: solid
+    border-color: transparent transparent #fff
+    top: @border-width * -2
+    left: 50%
+    margin-left: @border-width * -1
+
+.user-menu-link
+  display: block
+  white-space: nowrap
+  color: color-text
+  text-decoration: none
+  cursor: pointer
+  line-height: 1
+  padding: 10px 20px
+  text-align: center
+  border-radius: 3px
+  &:hover
+    background: color-orange
+    color: #fff

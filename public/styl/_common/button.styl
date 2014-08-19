@@ -3,21 +3,35 @@
   display: inline-block
   white-space: nowrap
   line-height: 1
-  padding: 8px 15px
+  padding: 8px 16px
   text-decoration: none
-  border-width: 1px
-  border-style: solid
   border-radius: 3px
   font-weight: bold
-  &.default
-    color: color-text
-    border-color: #ccc
-    &:hover
-      background: #eee
-  &.yellow
+  border: none
+  font-size: font-size
+  outline: none
+  user-select: none
+  &:disabled
+    opacity: 0.6
+    pointer-events: none
+  &.primary
     color: #fff
-    background: color-yellow
-    border-color: darken(color-yellow, 10%)
+    background: color-orange
     &:hover
-      background: darken(color-yellow, 10%)
-      border-color: darken(color-yellow, 20%)
+      background: darken(color-orange, 10%)
+  &.default
+    color: #fff
+    background: #ccc
+    &:hover
+      background: #aaa
+  &.success
+    color: #fff
+    background: #afdd22
+    &:hover
+      background: darken(@background, 10%)
+  &.large
+    padding: 12px 24px
+    font-size: 1.2em
+  &.small
+    padding: 6px 12px
+    font-size: 0.9em

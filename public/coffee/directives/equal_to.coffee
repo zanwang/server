@@ -5,9 +5,7 @@ angular.module('app').directive 'equalTo', ->
   scope:
     equalTo: '='
   link: (scope, elem, attrs, ctrl) ->
-    ctrl.$parsers.unshift (viewValue) ->
-      if viewValue is scope.equalTo
-        ctrl.$setValidity 'equal', true
-        viewValue
-      else
-        ctrl.$setValidity 'equal', false
+    scope.$watch ->
+      scope.equalTo is ctrl.$modelValue
+    , (value) ->
+      ctrl.$setValidity 'equal', value

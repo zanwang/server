@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"net"
 	"regexp"
 	"strconv"
 	"strings"
@@ -9,10 +10,9 @@ import (
 )
 
 var (
-	rEmail  = regexp.MustCompile(".+@.+\\..+")
-	rIP     = regexp.MustCompile("(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])")
-	rIPv6   = regexp.MustCompile("([0-9a-f]{1,4}:){7}([0-9a-f]){1,4}")
-	rDomain = regexp.MustCompile("\\.[a-zA-Z]{2,}$")
+	rEmail      = regexp.MustCompile(".+@.+\\..+")
+	rDomain     = regexp.MustCompile("\\.[a-zA-Z]{2,}$")
+	rDomainName = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z\\d\\-]*$")
 )
 
 // Validation stores the pointer of errors
@@ -138,7 +138,7 @@ func (v *Validator) MaxLength(length int, msg string) *Validator {
 func (v *Validator) Length(min int, max int, msg string) *Validator {
 	if len := v.len(); v.str() != "" && (len > max || len < min) {
 		if msg == "" {
-			msg = "Length should be between " + strconv.Itoa(min) + " and " + strconv.Itoa(max)
+			msg = "Length must be between " + strconv.Itoa(min) + " and " + strconv.Itoa(max)
 		}
 
 		v.err("113", msg)
@@ -149,7 +149,7 @@ func (v *Validator) Length(min int, max int, msg string) *Validator {
 
 // Email checks whether a field is a valid email
 func (v *Validator) Email(msg string) *Validator {
-	if v.str() != "" && !rEmail.MatchString(v.str()) {
+	if str := v.str(); str != "" && !rEmail.MatchString(str) {
 		if msg == "" {
 			msg = "Email is invalid"
 		}
@@ -187,9 +187,9 @@ func (v *Validator) Max(num int, msg string) *Validator {
 func (v *Validator) Within(min int, max int, msg string) *Validator {
 	num := v.int()
 
-	if num > max || num < min {
+	if num > max && num < min {
 		if msg == "" {
-			msg = "Value should be between " + strconv.Itoa(min) + "~" + strconv.Itoa(max)
+			msg = "Value must be between " + strconv.Itoa(min) + "~" + strconv.Itoa(max)
 		}
 
 		v.err("117", msg)
@@ -201,9 +201,9 @@ func (v *Validator) Within(min int, max int, msg string) *Validator {
 func (v *Validator) Without(min int, max int, msg string) *Validator {
 	num := v.int()
 
-	if num <= max || num >= min {
+	if num <= max && num >= min {
 		if msg == "" {
-			msg = "Value should be not between " + strconv.Itoa(min) + "~" + strconv.Itoa(max)
+			msg = "Value must be not between " + strconv.Itoa(min) + "~" + strconv.Itoa(max)
 		}
 
 		v.err("118", msg)
@@ -225,7 +225,7 @@ func (v *Validator) IsIn(arr []string, msg string) *Validator {
 
 	if !inarr {
 		if msg == "" {
-			msg = "Value should be one of [" + strings.Join(arr, ", ") + "]"
+			msg = "Value must be one of [" + strings.Join(arr, ", ") + "]"
 		}
 
 		v.err("119", msg)
@@ -240,7 +240,7 @@ func (v *Validator) NotIn(arr []string, msg string) *Validator {
 	for _, x := range arr {
 		if x == str {
 			if msg == "" {
-				msg = "Value should not be one of [" + strings.Join(arr, ", ") + "]"
+				msg = "Value must not be one of [" + strings.Join(arr, ", ") + "]"
 			}
 
 			v.err("120", msg)
@@ -252,36 +252,38 @@ func (v *Validator) NotIn(arr []string, msg string) *Validator {
 }
 
 func (v *Validator) IP(msg string) *Validator {
-	if v.str() != "" && !rIP.MatchString(v.str()) {
-		if msg == "" {
-			msg = "IP is invalid"
+	if str := v.str(); str != "" {
+		if ip := net.ParseIP(str); ip == nil {
+			if msg == "" {
+				msg = "IP is invalid"
+			}
+
+			v.err("121", msg)
 		}
-
-		v.err("121", msg)
-	}
-
-	return v
-}
-
-func (v *Validator) IPv6(msg string) *Validator {
-	if v.str() != "" && !rIPv6.MatchString(v.str()) {
-		if msg == "" {
-			msg = "IPv6 is invalid"
-		}
-
-		v.err("122", msg)
 	}
 
 	return v
 }
 
 func (v *Validator) Domain(msg string) *Validator {
-	if v.str() != "" && !rIPv6.MatchString(v.str()) {
+	if str := v.str(); str != "" && !rDomain.MatchString(str) {
 		if msg == "" {
 			msg = "Domain is invalid"
 		}
 
 		v.err("123", msg)
+	}
+
+	return v
+}
+
+func (v *Validator) DomainName(msg string) *Validator {
+	if str := v.str(); str != "" && !rDomainName.MatchString(str) {
+		if msg == "" {
+			msg = "Domain name is invalid"
+		}
+
+		v.err("124", msg)
 	}
 
 	return v

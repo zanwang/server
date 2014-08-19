@@ -17,11 +17,11 @@ func generatePassword(password string) string {
 
 // APIError stores API error
 type APIError struct {
-	Code    string `json:"code"`
+	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
 
-func newErr(fields []string, code string, msg string) binding.Errors {
+func NewErr(fields []string, code string, msg string) binding.Errors {
 	errors := binding.Errors{}
 	errors.Add(fields, code, msg)
 
@@ -29,20 +29,22 @@ func newErr(fields []string, code string, msg string) binding.Errors {
 }
 
 func FormatErr(errors interface{}) map[string]interface{} {
-	result := make(map[string][]APIError)
+	result := make(map[string]APIError)
 
 	switch errors := errors.(type) {
 	case binding.Errors:
 		for _, err := range errors {
 			for _, field := range err.Fields() {
 				if _, ok := result[field]; !ok {
-					result[field] = []APIError{}
-				}
+					msg := err.Error()
 
-				result[field] = append(result[field], APIError{
-					Code:    err.Kind(),
-					Message: err.Error(),
-				})
+					if code, err := strconv.Atoi(err.Kind()); err == nil {
+						result[field] = APIError{
+							Code:    code,
+							Message: msg,
+						}
+					}
+				}
 			}
 		}
 	}

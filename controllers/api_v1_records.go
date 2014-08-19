@@ -23,7 +23,7 @@ func RecordList(r render.Render, db *gorp.DbMap, domain *models.Domain) {
 type RecordCreateForm struct {
 	Name     string `form:"name"`
 	Type     string `form:"type"`
-	Content  string `form:"content"`
+	Value    string `form:"value"`
 	TTL      uint   `form:"ttl"`
 	Priority uint   `form:"priority"`
 }
@@ -33,25 +33,19 @@ func (form *RecordCreateForm) Validate(errors binding.Errors, req *http.Request)
 
 	form.Type = strings.ToUpper(form.Type)
 
-	if form.Name != "" {
-		v.Validate(&form.Name, "name").Length(1, 63, "")
-	}
-
+	v.Validate(&form.Name, "name").MaxLength(63, "").DomainName("")
 	v.Validate(&form.Type, "type").Required("").IsIn(models.RecordType, "")
-	v.Validate(&form.Content, "content").Required("")
-	v.Validate(&form.TTL, "ttl").Required("").Within(120, 86400, "")
+	v.Validate(&form.Value, "value").Required("")
 
-	if form.Type == "MX" {
-		v.Validate(&form.Priority, "priority").Required("").Min(0, "")
+	if form.TTL > 1 {
+		v.Validate(&form.TTL, "ttl").Within(120, 86400, "")
 	}
 
 	switch form.Type {
-	case "A":
-		v.Validate(&form.Content, "content").IP("")
+	case "A", "AAAA":
+		v.Validate(&form.Value, "value").IP("")
 	case "CNAME", "MX", "NS":
-		v.Validate(&form.Content, "content").Domain("")
-	case "AAAA":
-		v.Validate(&form.Content, "content").IPv6("")
+		v.Validate(&form.Value, "value").Domain("")
 	}
 
 	return errors
@@ -61,7 +55,7 @@ func RecordCreate(form RecordCreateForm, db *gorp.DbMap, r render.Render, domain
 	record := models.Record{
 		Name:     form.Name,
 		Type:     form.Type,
-		Content:  form.Content,
+		Value:    form.Value,
 		TTL:      form.TTL,
 		Priority: form.Priority,
 		DomainID: domain.ID,
@@ -81,7 +75,7 @@ func RecordShow(r render.Render, record *models.Record) {
 type RecordUpdateForm struct {
 	Name     string `form:"name"`
 	Type     string `form:"type"`
-	Content  string `form:"content"`
+	Value    string `form:"value"`
 	TTL      uint   `form:"ttl"`
 	Priority uint   `form:"priority"`
 }
@@ -96,19 +90,16 @@ func (form *RecordUpdateForm) Validate(errors binding.Errors, req *http.Request)
 	}
 
 	v.Validate(&form.Type, "type").IsIn(models.RecordType, "")
-	v.Validate(&form.TTL, "ttl").Within(120, 86400, "")
 
-	if form.Type == "MX" {
-		v.Validate(&form.Priority, "priority").Min(0, "")
+	if form.TTL > 1 {
+		v.Validate(&form.TTL, "ttl").Within(120, 86400, "")
 	}
 
 	switch form.Type {
-	case "A":
-		v.Validate(&form.Content, "content").IP("")
+	case "A", "AAAA":
+		v.Validate(&form.Value, "value").IP("")
 	case "CNAME", "MX", "NS":
-		v.Validate(&form.Content, "content").Domain("")
-	case "AAAA":
-		v.Validate(&form.Content, "content").IPv6("")
+		v.Validate(&form.Value, "value").Domain("")
 	}
 
 	return errors
@@ -123,8 +114,8 @@ func RecordUpdate(form RecordUpdateForm, db *gorp.DbMap, r render.Render, record
 		record.Type = form.Type
 	}
 
-	if form.Content != "" {
-		record.Content = form.Content
+	if form.Value != "" {
+		record.Value = form.Value
 	}
 
 	record.TTL = form.TTL

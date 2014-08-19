@@ -2,6 +2,8 @@ package middlewares
 
 import (
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/coopernurse/gorp"
 	"github.com/go-martini/martini"
@@ -10,22 +12,30 @@ import (
 
 func CheckToken(c martini.Context, db *gorp.DbMap, req *http.Request) {
 	var token models.Token
-	header := req.Header.Get("X-Auth-Token")
+	auth := strings.Split(req.Header.Get("Authorization"), " ")
 
-	if header != "" {
-		if err := db.SelectOne(&token, "SELECT * FROM tokens WHERE key=?", header); err != nil {
-			token.Authorized = true
+	if strings.ToLower(auth[0]) == "token" && auth[1] != "" {
+		if err := db.SelectOne(&token, "SELECT * FROM tokens WHERE key=?", auth[1]); err == nil {
+			// Delete token if expired
+			if token.ExpiredAt.Before(time.Now()) {
+				if _, err := db.Delete(&token); err != nil {
+					panic(err)
+				}
+			} else {
+				token.Authorized = true
+			}
 		}
 	}
 
 	c.Map(&token)
-	c.Next()
 
 	// Update token
 	if token.Authorized {
-		if _, err := db.Update(&token); err != nil {
-			panic(err)
-		}
+		defer func() {
+			if _, err := db.Update(&token); err != nil {
+				panic(err)
+			}
+		}()
 	}
 }
 

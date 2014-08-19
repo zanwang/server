@@ -1,0 +1,88 @@
+<div id="domain-list">
+  <div loading="loading"></div>
+  <form id="domain-create" name="domainForm" novalidate ng-show="!loading" ng-submit="create()" ng-class="{shake: submitted && domainForm.$invalid}">
+    <div id="domain-create-input-wrap">
+      <input id="domain-create-input" class="input" type="text" name="name" ng-model="domain.name" required ng-maxlength="63" ng-pattern="/^[a-zA-Z]+[a-zA-Z\d\-]*$/">
+    </div>
+    <div class="domain-create-error" ng-show="submitted && domainForm.name.$error.required">Required</div>
+    <div class="domain-create-error" ng-show="submitted && domainForm.name.$error.maxlength">Maximum length is 63</div>
+    <div class="domain-create-error" ng-show="domainForm.name.$error.pattern">Only characters, numbers and dashes are allowed.</div>
+    <div class="domain-create-error" ng-show="errors.name">{{ errors.name.message }}</div>
+    <div class="domain-create-error" ng-show="errors.common">{{ errors.common.message }}</div>
+    <button id="domain-create-btn" class="btn primary" type="submit" ng-disabled="submitting">Add</button>
+    <span id="domain-create-suffix">.maji.moe</span>
+  </form>
+  <div id="domain-list-msg" ng-show="!loading && !domains.length">Click "Add" to create a new domain!</div>
+  <div class="domain" ng-repeat="d in domains | orderBy: 'created_at'" ng-class="{expanded: expanded}" ng-controller="DomainCtrl" ng-init="domain = d">
+    <header class="domain-header" ng-click="show()">
+      <h2 class="domain-name" ng-bind="domain.name"></h2>
+      <div class="domain-header-icon" ng-show="!loading"></div>
+      <div class="domain-header-loading" loading="loading" loading-style="loadingStyle"></div>
+    </header>
+    <div class="domain-content" ng-show="!loading && expanded">
+      <div class="record" ng-repeat="r in records" ng-class="record.type" ng-init="record = r" ng-controller="RecordCtrl">
+        <form name="editForm" novalidate ng-submit="update()">
+          <div ng-if="!editing">
+            <div class="record-type" ng-bind="record.type"></div>
+            <div class="record-name" ng-bind="record.name || domain.name + '.maji.moe'"></div>
+            <div class="record-value">
+              <span ng-bind="record.value"></span>
+              <span class="record-priority" ng-bind="record.priority"></span>
+            </div>
+            <a class="record-delete-btn" title="Delete" ng-click="delete()"></a>
+            <a class="record-edit-btn" title="Edit" ng-click="edit()"></a>
+            <div class="record-ttl" ng-bind="TTLtxt[record.ttl]"></div>
+          </div>
+          <div ng-if="editing">
+            <div class="record-edit">
+              <div class="record-input-type">
+                <select class="record-input-select" name="type" ng-model="record.type" required ng-options="type for type in recordTypes"></select>
+              </div>
+              <div class="record-input-name">
+                <input class="record-input-txt" type="text" name="name" ng-model="record.name" placeholder="e.g. www" ng-pattern="/^[a-zA-Z]+[a-zA-Z\d\-]*$/">
+              </div>
+              <div class="record-input-value">
+                <input class="record-input-txt" type="text" name="value" ng-model="record.value" required placeholder="{{ recordTypeHint[record.type] }}">
+              </div>
+              <div class="record-input-ttl">
+                <select class="record-input-select" name="ttl" ng-model="record.ttl" required ng-options="ttl.id as ttl.name for ttl in recordTTL"></select>
+              </div>
+              <div class="record-input-priority">
+                <input class="record-input-txt" type="number" name="priority" ng-model="record.priority" placeholder="Priority" min="0">
+              </div>
+            </div>
+            <button type="submit" class="record-update-btn btn success small" ng-disabled="submitting">Save</button>
+            <a class="record-cancel-btn btn default small" ng-click="cancel()"></a>
+            <div class="record-input-error" ng-show="submitted && editForm.value.$error.required">Required</div>
+            <div class="record-input-error" ng-show="errors.value">{{ errors.value.message }}</div>
+            <div class="record-input-error" ng-show="errors.priority">{{ errors.priority.message }}</div>
+          </div>
+        </form>
+      </div>
+      <div class="record-list-msg" ng-show="!records.length">Click "Add" to create a new record!</div>
+      <form class="record-create-form" name="recordForm" novalidate ng-submit="create()">
+        <div class="record-create" ng-class="{mx: record.type === 'MX'}">
+          <div class="record-input-type">
+            <select class="record-input-select" name="type" ng-model="record.type" required ng-options="type for type in recordTypes"></select>
+          </div>
+          <div class="record-input-name">
+            <input class="record-input-txt" type="text" name="name" ng-model="record.name" placeholder="e.g. www" ng-pattern="/^[a-zA-Z]+[a-zA-Z\d\-]*$/">
+          </div>
+          <div class="record-input-value">
+            <input class="record-input-txt" type="text" name="value" ng-model="record.value" required placeholder="{{ recordTypeHint[record.type] }}">
+          </div>
+          <div class="record-input-ttl">
+            <select class="record-input-select" name="ttl" ng-model="record.ttl" required ng-options="ttl.id as ttl.name for ttl in recordTTL"></select>
+          </div>
+          <div class="record-input-priority">
+            <input class="record-input-txt" type="number" name="priority" ng-model="record.priority" placeholder="Priority" min="0">
+          </div>
+        </div>
+        <button type="submit" class="record-create-btn btn primary small" ng-disabled="submitting">Add</button>
+        <div class="record-input-error" ng-show="submitted && recordForm.value.$error.required">Required</div>
+        <div class="record-input-error" ng-show="errors.value">{{ errors.value.message }}</div>
+        <div class="record-input-error" ng-show="errors.priority">{{ errors.priority.message }}</div>
+      </form>
+    </div>
+  </div>
+</div>

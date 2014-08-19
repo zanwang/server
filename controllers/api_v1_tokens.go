@@ -13,14 +13,14 @@ import (
 )
 
 type TokenCreateForm struct {
-	Login    string `form:"login"`
+	Email    string `form:"email"`
 	Password string `form:"password"`
 }
 
 func (form *TokenCreateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
 	v := Validation{Errors: &errors}
 
-	v.Validate(&form.Login, "login").Required("")
+	v.Validate(&form.Email, "email").Required("").Email("")
 	v.Validate(&form.Password, "password").Required("").Length(6, 50, "")
 
 	return errors
@@ -29,40 +29,42 @@ func (form *TokenCreateForm) Validate(errors binding.Errors, req *http.Request) 
 func TokenCreate(form TokenCreateForm, r render.Render, db *gorp.DbMap) {
 	var user models.User
 
-	if err := db.SelectOne(&user, "SELECT id, password FROM users WHERE name=? OR email=?", form.Login, form.Login); err != nil {
-		r.Status(http.StatusNotFound)
+	if err := db.SelectOne(&user, "SELECT id, password FROM users WHERE email=?", form.Email); err != nil {
+		errors := NewErr([]string{"email"}, "213", "User does not exist")
+		r.JSON(http.StatusBadRequest, FormatErr(errors))
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.Password)); err != nil {
-		r.Status(http.StatusUnauthorized)
+		errors := NewErr([]string{"password"}, "214", "Password is wrong")
+		r.JSON(http.StatusUnauthorized, FormatErr(errors))
 		return
 	}
 
-	var token models.Token
+	token := models.Token{
+		UserID: user.ID,
+		Key:    uniuri.NewLen(32),
+	}
 
-	if err := db.SelectOne(&token, "SELECT * FROM tokens WHERE user_id=?", user.ID); err != nil {
-		// Create a token
-		token = models.Token{
-			UserID: user.ID,
-			Key:    uniuri.NewLen(32),
-		}
-
-		if err := db.Insert(&token); err != nil {
-			panic(err)
-		}
-	} else {
-		// Update the existing token
-		if _, err := db.Update(&token); err != nil {
-			panic(err)
-		}
+	if err := db.Insert(&token); err != nil {
+		panic(err)
 	}
 
 	r.JSON(http.StatusCreated, token)
 }
 
-func TokenDestroy(dbMap *gorp.DbMap, res http.ResponseWriter, token *models.Token) {
-	if count, err := dbMap.Delete(token); count > 0 {
+func TokenUpdate(db *gorp.DbMap, r render.Render, token *models.Token) {
+	if count, err := db.Update(token); count > 0 {
+		r.JSON(http.StatusOK, token)
+	} else if err != nil {
+		panic(err)
+	} else {
+		r.Status(http.StatusNotFound)
+	}
+}
+
+func TokenDestroy(db *gorp.DbMap, res http.ResponseWriter, token *models.Token) {
+	if count, err := db.Delete(token); count > 0 {
 		res.WriteHeader(http.StatusNoContent)
 	} else if err != nil {
 		panic(err)

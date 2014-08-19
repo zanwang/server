@@ -1,12 +1,20 @@
 angular = require 'angular'
 
-angular.module('app').controller 'SignupCtrl', ($scope, $http) ->
-  $scope.signup = ->
+angular.module('app').controller 'SignupCtrl', ($scope, User, $state) ->
+  $scope.submitted = false
+  $scope.submitting = false
+  $scope.success = false
+  $scope.user = new User()
+
+  $scope.submit = ->
+    return if $scope.submitting
+
+    $scope.submitting = true
+    $scope.submitted = true
     return if $scope.signupForm.$invalid
 
-    $http.post '/api/v1/users',
-      name: $scope.name
-      password: $scope.password
-      email: $scope.email
-    .success (data) ->
-      console.log data
+    $scope.user.$save().then (data) ->
+      $scope.success = true
+    , (err) ->
+      $scope.errors = err.data.errors
+      $scope.submitting = false

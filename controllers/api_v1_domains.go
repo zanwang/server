@@ -7,6 +7,7 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/render"
+	"github.com/tommy351/maji.moe/config"
 	"github.com/tommy351/maji.moe/models"
 )
 
@@ -35,16 +36,24 @@ type DomainCreateForm struct {
 func (form *DomainCreateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
 	v := Validation{Errors: &errors}
 
-	v.Validate(&form.Name, "name").Required("").Length(2, 63, "")
+	v.Validate(&form.Name, "name").Required("").MaxLength(63, "").DomainName("")
 
 	return errors
 }
 
-func DomainCreate(form DomainCreateForm, db *gorp.DbMap, r render.Render, user *models.User, token *models.Token) {
+func DomainCreate(form DomainCreateForm, db *gorp.DbMap, r render.Render, user *models.User, token *models.Token, conf *config.Config) {
+	for _, x := range conf.ReservedDomains {
+		if form.Name == x {
+			errors := NewErr([]string{"name"}, "212", "Domain name has been taken")
+			r.JSON(http.StatusBadRequest, FormatErr(errors))
+			return
+		}
+	}
+
 	var domain models.Domain
 
-	if err := db.SelectOne(&domain, "SELECT id FROM domains WHERE name=?", form.Name); err != nil {
-		errors := newErr([]string{"name"}, "212", "Domain name has been taken")
+	if err := db.SelectOne(&domain, "SELECT id FROM domains WHERE name=?", form.Name); err == nil {
+		errors := NewErr([]string{"name"}, "212", "Domain name has been taken")
 		r.JSON(http.StatusBadRequest, FormatErr(errors))
 		return
 	}

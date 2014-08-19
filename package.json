@@ -18,11 +18,12 @@
     "gulp-uglify": "^0.3.1",
     "nib": "^1.0.3",
     "stringify": "^2.2.0",
-    "vinyl-source-stream": "^0.1.1",
-    "gulp-ng-annotate": "^0.3.0"
+    "vinyl-source-stream": "^0.1.1"
   },
   "dependencies": {
     "angular": "^1.2.19",
-    "angular-ui-router": "^0.2.10"
+    "angular-cookies": "^1.2.19",
+    "angular-ui-router": "^0.2.10",
+    "spin.js": "^2.0.1"
   }
 }

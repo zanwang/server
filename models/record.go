@@ -13,7 +13,7 @@ type Record struct {
 	ID        int64     `db:"id" json:"id"`
 	Name      string    `db:"name" json:"name"`
 	Type      string    `db:"type" json:"type"`
-	Content   string    `db:"content" json:"content"`
+	Value     string    `db:"value" json:"value"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 	DomainID  int64     `db:"domain_id" json:"domain_id"`

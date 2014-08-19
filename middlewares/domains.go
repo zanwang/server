@@ -13,6 +13,7 @@ func GetDomain(params martini.Params, c martini.Context, db *gorp.DbMap, res htt
 
 	if err := db.SelectOne(&domain, "SELECT * FROM domains WHERE id=?", params["domain_id"]); err != nil {
 		res.WriteHeader(http.StatusNotFound)
+		return
 	}
 
 	c.Map(&domain)
@@ -22,6 +23,7 @@ func CheckOwnershipOfDomain(strict bool) martini.Handler {
 	return func(token *models.Token, res http.ResponseWriter, domain *models.Domain) {
 		if domain.UserID != token.UserID && (strict || !domain.Public) {
 			res.WriteHeader(http.StatusForbidden)
+			return
 		}
 	}
 }
