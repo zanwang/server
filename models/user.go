@@ -20,7 +20,6 @@ type User struct {
 	UpdatedAt       time.Time `db:"updated_at" json:"updated_at"`
 	Activated       bool      `db:"activated" json:"activated"`
 	ActivationToken string    `db:"activation_token" json:"-"`
-	PasswordSet     bool      `db:"password_set" json:"password_set"`
 	LoggedIn        bool      `db:"-" json:"-"`
 }
 

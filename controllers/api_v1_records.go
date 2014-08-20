@@ -38,7 +38,7 @@ func (form *RecordCreateForm) Validate(errors binding.Errors, req *http.Request)
 	v.Validate(&form.Value, "value").Required("")
 
 	if form.TTL > 1 {
-		v.Validate(&form.TTL, "ttl").Within(120, 86400, "")
+		v.Validate(&form.TTL, "ttl").Within(300, 86400, "")
 	}
 
 	switch form.Type {

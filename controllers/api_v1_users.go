@@ -44,7 +44,6 @@ func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap, mg mail
 		Email:           form.Email,
 		Activated:       !conf.EmailActivation,
 		ActivationToken: uniuri.NewLen(32),
-		PasswordSet:     true,
 	}
 
 	user.Gravatar()
@@ -64,6 +63,7 @@ func UserShow(r render.Render, user *models.User) {
 		r.JSON(http.StatusOK, map[string]interface{}{
 			"id":         user.ID,
 			"name":       user.Name,
+			"avatar":     user.Avatar,
 			"created_at": user.CreatedAt,
 			"updated_at": user.UpdatedAt,
 		})
@@ -92,7 +92,6 @@ func UserUpdate(form UserUpdateForm, r render.Render, db *gorp.DbMap, user *mode
 
 	if form.Password != "" {
 		user.Password = generatePassword(form.Password)
-		user.PasswordSet = true
 	}
 
 	if form.Email != "" && user.Email != form.Email {
