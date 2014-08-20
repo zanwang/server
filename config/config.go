@@ -29,6 +29,8 @@ type Config struct {
 		PrivateKey string `yaml:"private_key"`
 		PublicKey  string `yaml:"public_key"`
 	} `yaml:"mailgun"`
+
+	EmailActivation bool `yaml:"email_activation"`
 }
 
 const configDir = "config"

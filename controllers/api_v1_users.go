@@ -9,6 +9,7 @@ import (
 	"github.com/mailgun/mailgun-go"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/render"
+	"github.com/tommy351/maji.moe/config"
 	"github.com/tommy351/maji.moe/models"
 )
 
@@ -28,7 +29,7 @@ func (form *UserCreateForm) Validate(errors binding.Errors, req *http.Request) b
 	return errors
 }
 
-func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap, mg mailgun.Mailgun) {
+func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap, mg mailgun.Mailgun, conf *config.Config) {
 	var user models.User
 
 	if err := dbMap.SelectOne(&user, "SELECT email FROM users WHERE email=?", form.Email); err == nil {
@@ -41,7 +42,7 @@ func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap, mg mail
 		Name:            form.Name,
 		Password:        generatePassword(form.Password),
 		Email:           form.Email,
-		Activated:       false,
+		Activated:       !conf.EmailActivation,
 		ActivationToken: uniuri.NewLen(32),
 		PasswordSet:     true,
 	}

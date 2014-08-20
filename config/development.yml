@@ -16,3 +16,6 @@ mailgun:
   domain:
   private_key:
   public_key:
+
+# For debugging
+email_activation: false
