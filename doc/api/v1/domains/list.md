@@ -31,8 +31,6 @@ Returns a list of domains.
   + Type: `string`
 - **user_id**
   + Type: `int`
-- **public**
-  + Type: `bool`
 
 ### 404
 

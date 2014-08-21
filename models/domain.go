@@ -13,7 +13,6 @@ type Domain struct {
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 	UserID    int64     `db:"user_id" json:"user_id"`
-	Public    bool      `db:"public" json:"public"`
 }
 
 func (data *Domain) PreInsert(s gorp.SqlExecutor) error {

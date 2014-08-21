@@ -93,26 +93,26 @@ func server() {
 		r.Group("/domains", func(r martini.Router) {
 			r.Group("/:domain_id", func(r martini.Router) {
 				// GET /api/v1/domains/:domain_id
-				r.Get("", middlewares.CheckOwnershipOfDomain(false), controllers.DomainShow)
+				r.Get("", middlewares.CheckOwnershipOfDomain, controllers.DomainShow)
 				// PUT /api/v1/domains/:domain_id
-				r.Put("", middlewares.CheckOwnershipOfDomain(true), middlewares.Validate(controllers.DomainUpdateForm{}), controllers.DomainUpdate)
+				r.Put("", middlewares.CheckOwnershipOfDomain, middlewares.Validate(controllers.DomainUpdateForm{}), controllers.DomainUpdate)
 				// DELETE /api/v1/domains/:domain_id
-				r.Delete("", middlewares.CheckOwnershipOfDomain(true), controllers.DomainDestroy)
+				r.Delete("", middlewares.CheckOwnershipOfDomain, controllers.DomainDestroy)
 				// GET /api/v1/domain/:domain_id/records
-				r.Get("/records", middlewares.CheckOwnershipOfDomain(false), controllers.RecordList)
+				r.Get("/records", middlewares.CheckOwnershipOfDomain, controllers.RecordList)
 				// POST /api/v1/domain/:domain_id/records
-				r.Post("/records", middlewares.CheckOwnershipOfDomain(true), middlewares.Validate(controllers.RecordCreateForm{}), controllers.RecordCreate)
+				r.Post("/records", middlewares.CheckOwnershipOfDomain, middlewares.Validate(controllers.RecordCreateForm{}), controllers.RecordCreate)
 			}, middlewares.GetDomain)
 		}, middlewares.CheckToken, middlewares.NeedAuthorization)
 
 		r.Group("/records", func(r martini.Router) {
 			r.Group("/:record_id", func(r martini.Router) {
 				// GET /api/v1/records/:record_id
-				r.Get("", middlewares.CheckOwnershipOfRecord(false), controllers.RecordShow)
+				r.Get("", middlewares.CheckOwnershipOfRecord, controllers.RecordShow)
 				// PUT /api/v1/records/:record_id
-				r.Put("", middlewares.CheckOwnershipOfRecord(true), middlewares.Validate(controllers.RecordUpdateForm{}), controllers.RecordUpdate)
+				r.Put("", middlewares.CheckOwnershipOfRecord, middlewares.Validate(controllers.RecordUpdateForm{}), controllers.RecordUpdate)
 				// DELETE /api/v1/records/:record_id
-				r.Delete("", middlewares.CheckOwnershipOfRecord(true), controllers.RecordDestroy)
+				r.Delete("", middlewares.CheckOwnershipOfRecord, controllers.RecordDestroy)
 			}, middlewares.GetRecord)
 		}, middlewares.CheckToken, middlewares.NeedAuthorization)
 

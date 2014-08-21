@@ -19,11 +19,9 @@ func GetDomain(params martini.Params, c martini.Context, db *gorp.DbMap, res htt
 	c.Map(&domain)
 }
 
-func CheckOwnershipOfDomain(strict bool) martini.Handler {
-	return func(token *models.Token, res http.ResponseWriter, domain *models.Domain) {
-		if domain.UserID != token.UserID && (strict || !domain.Public) {
-			res.WriteHeader(http.StatusForbidden)
-			return
-		}
+func CheckOwnershipOfDomain(token *models.Token, res http.ResponseWriter, domain *models.Domain) {
+	if domain.UserID != token.UserID {
+		res.WriteHeader(http.StatusForbidden)
+		return
 	}
 }

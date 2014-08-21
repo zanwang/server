@@ -19,20 +19,18 @@ func GetRecord(params martini.Params, c martini.Context, db *gorp.DbMap, res htt
 	c.Map(&record)
 }
 
-func CheckOwnershipOfRecord(strict bool) martini.Handler {
-	return func(record *models.Record, db *gorp.DbMap, token *models.Token, res http.ResponseWriter, c martini.Context) {
-		var domain models.Domain
+func CheckOwnershipOfRecord(record *models.Record, db *gorp.DbMap, token *models.Token, res http.ResponseWriter, c martini.Context) {
+	var domain models.Domain
 
-		if err := db.SelectOne(&domain, "SELECT * FROM domains WHERE id=?", record.DomainID); err != nil {
-			res.WriteHeader(http.StatusNotFound)
-			return
-		}
-
-		if domain.UserID != token.UserID && (strict || !domain.Public) {
-			res.WriteHeader(http.StatusForbidden)
-			return
-		}
-
-		c.Map(&domain)
+	if err := db.SelectOne(&domain, "SELECT * FROM domains WHERE id=?", record.DomainID); err != nil {
+		res.WriteHeader(http.StatusNotFound)
+		return
 	}
+
+	if domain.UserID != token.UserID {
+		res.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	c.Map(&domain)
 }

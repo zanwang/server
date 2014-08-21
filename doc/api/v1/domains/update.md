@@ -22,9 +22,6 @@ Update a domain.
   + Type: `string`
   + Maximum length: 63
   + Must be a valid domain name
-- **public**
-  + Optional
-  + Type: `bool`
 
 ## Response
 
@@ -40,8 +37,6 @@ Update a domain.
   + Type: `string`
 - **user_id**
   + Type: `int`
-- **public**
-  + Type: `bool`
 
 ### 400
 

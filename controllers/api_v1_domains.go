@@ -13,15 +13,8 @@ import (
 
 func DomainList(params martini.Params, token *models.Token, r render.Render, db *gorp.DbMap, user *models.User) {
 	var domains []models.Domain
-	var err error
 
-	if user.ID == token.UserID {
-		_, err = db.Select(&domains, "SELECT * FROM domains WHERE user_id=?", user.ID)
-	} else {
-		_, err = db.Select(&domains, "SELECT * FROM domains WHERE user_id=? AND public=?", user.ID, true)
-	}
-
-	if err != nil {
+	if _, err := db.Select(&domains, "SELECT * FROM domains WHERE user_id=?", user.ID); err != nil {
 		panic(err)
 	}
 
@@ -29,8 +22,7 @@ func DomainList(params martini.Params, token *models.Token, r render.Render, db 
 }
 
 type DomainCreateForm struct {
-	Name   string `form:"name"`
-	Public bool   `form:"public"`
+	Name string `form:"name"`
 }
 
 func (form *DomainCreateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
@@ -60,7 +52,6 @@ func DomainCreate(form DomainCreateForm, db *gorp.DbMap, r render.Render, user *
 
 	domain = models.Domain{
 		Name:   form.Name,
-		Public: form.Public,
 		UserID: token.UserID,
 	}
 
@@ -76,14 +67,13 @@ func DomainShow(r render.Render, domain *models.Domain) {
 }
 
 type DomainUpdateForm struct {
-	Name   string `form:"name"`
-	Public bool   `form:"public"`
+	Name string `form:"name"`
 }
 
 func (form *DomainUpdateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
 	v := Validation{Errors: &errors}
 
-	v.Validate(&form.Name, "name").Length(2, 63, "")
+	v.Validate(&form.Name, "name").MaxLength(63, "").DomainName("")
 
 	return errors
 }
@@ -92,8 +82,6 @@ func DomainUpdate(form DomainUpdateForm, r render.Render, db *gorp.DbMap, domain
 	if form.Name != "" {
 		domain.Name = form.Name
 	}
-
-	domain.Public = form.Public
 
 	if count, err := db.Update(domain); count > 0 {
 		r.JSON(http.StatusOK, domain)
