@@ -31,7 +31,7 @@ maji.moe`
 var activationTmpl = template.Must(template.New("activation mail").Parse(activationMail))
 
 type EmailResendForm struct {
-	Email int64 `form:"email"`
+	Email int64 `form:"email" json:"email"`
 }
 
 func (form *EmailResendForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {

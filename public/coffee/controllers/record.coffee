@@ -16,9 +16,10 @@ angular.module('app').controller 'RecordCtrl', ($scope) ->
   $scope.update = ->
     return if $scope.submitting
 
-    $scope.submitting = true
     $scope.submitted = true
     return if $scope.editForm.$invalid
+
+    $scope.submitting = true
 
     $scope.record.$update().then (data) ->
       $scope.record = data

@@ -40,6 +40,10 @@ func (data *User) PreDelete(s gorp.SqlExecutor) error {
 		return err
 	}
 
+	if _, err := s.Exec("DELETE FROM tokens WHERE user_id=?", data.ID); err != nil {
+		return err
+	}
+
 	return nil
 }
 

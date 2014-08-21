@@ -16,9 +16,10 @@ angular.module('app').controller 'DomainListCtrl', ($scope, Domain) ->
   $scope.create = ->
     return if $scope.submitting
 
-    $scope.submitting = true
     $scope.submitted = true
     return if $scope.domainForm.$invalid
+
+    $scope.submitting = true
 
     $scope.domain.$create().then (data) ->
       $scope.domains.push data

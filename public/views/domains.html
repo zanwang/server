@@ -2,11 +2,11 @@
   <div loading="loading"></div>
   <form id="domain-create" name="domainForm" novalidate ng-show="!loading" ng-submit="create()" ng-class="{shake: submitted && domainForm.$invalid}">
     <div id="domain-create-input-wrap">
-      <input id="domain-create-input" class="input" type="text" name="name" ng-model="domain.name" required ng-maxlength="63" ng-pattern="/^[a-zA-Z]+[a-zA-Z\d\-]*$/">
+      <input id="domain-create-input" class="input" type="text" name="name" ng-model="domain.name" required ng-maxlength="63" domain-name>
     </div>
     <div class="domain-create-error" ng-show="submitted && domainForm.name.$error.required">Required</div>
     <div class="domain-create-error" ng-show="submitted && domainForm.name.$error.maxlength">Maximum length is 63</div>
-    <div class="domain-create-error" ng-show="domainForm.name.$error.pattern">Only characters, numbers and dashes are allowed.</div>
+    <div class="domain-create-error" ng-show="domainForm.name.$error.domainName">Only characters, numbers and dashes are allowed.</div>
     <div class="domain-create-error" ng-show="errors.name">{{ errors.name.message }}</div>
     <div class="domain-create-error" ng-show="errors.common">{{ errors.common.message }}</div>
     <button id="domain-create-btn" class="btn primary" type="submit" ng-disabled="submitting">Add</button>
@@ -20,6 +20,8 @@
       <div class="domain-header-loading" loading="loading" loading-style="loadingStyle"></div>
     </header>
     <div class="domain-content" ng-show="!loading && expanded">
+      <h3 class="domain-section-title">Settings</h3>
+      <h3 class="domain-section-title">Records</h3>
       <div class="record" ng-repeat="r in records" ng-class="record.type" ng-init="record = r" ng-controller="RecordCtrl">
         <form name="editForm" novalidate ng-submit="update()">
           <div ng-if="!editing">
@@ -39,7 +41,7 @@
                 <select class="record-input-select" name="type" ng-model="record.type" required ng-options="type for type in recordTypes"></select>
               </div>
               <div class="record-input-name">
-                <input class="record-input-txt" type="text" name="name" ng-model="record.name" placeholder="e.g. www" ng-pattern="/^[a-zA-Z]+[a-zA-Z\d\-]*$/">
+                <input class="record-input-txt" type="text" name="name" ng-model="record.name" placeholder="e.g. www" domain-name>
               </div>
               <div class="record-input-value">
                 <input class="record-input-txt" type="text" name="value" ng-model="record.value" required placeholder="{{ recordTypeHint[record.type] }}">
@@ -54,6 +56,7 @@
             <button type="submit" class="record-update-btn btn success small" ng-disabled="submitting">Save</button>
             <a class="record-cancel-btn btn default small" ng-click="cancel()"></a>
             <div class="record-input-error" ng-show="submitted && editForm.value.$error.required">Required</div>
+            <div class="record-input-error" ng-show="editForm.name.$error.domainName">Only characters, numbers and dashes are allowed.</div>
             <div class="record-input-error" ng-show="errors.value">{{ errors.value.message }}</div>
             <div class="record-input-error" ng-show="errors.priority">{{ errors.priority.message }}</div>
           </div>
@@ -66,7 +69,7 @@
             <select class="record-input-select" name="type" ng-model="record.type" required ng-options="type for type in recordTypes"></select>
           </div>
           <div class="record-input-name">
-            <input class="record-input-txt" type="text" name="name" ng-model="record.name" placeholder="e.g. www" ng-pattern="/^[a-zA-Z]+[a-zA-Z\d\-]*$/">
+            <input class="record-input-txt" type="text" name="name" ng-model="record.name" placeholder="e.g. www" ng-maxlength="63" domain-name>
           </div>
           <div class="record-input-value">
             <input class="record-input-txt" type="text" name="value" ng-model="record.value" required placeholder="{{ recordTypeHint[record.type] }}">
@@ -80,6 +83,8 @@
         </div>
         <button type="submit" class="record-create-btn btn primary small" ng-disabled="submitting">Add</button>
         <div class="record-input-error" ng-show="submitted && recordForm.value.$error.required">Required</div>
+        <div class="record-input-error" ng-show="submitted && recordForm.name.$error.maxlength">Maximum length is 63</div>
+        <div class="record-input-error" ng-show="recordForm.name.$error.domainName">Only characters, numbers and dashes are allowed.</div>
         <div class="record-input-error" ng-show="errors.value">{{ errors.value.message }}</div>
         <div class="record-input-error" ng-show="errors.priority">{{ errors.priority.message }}</div>
       </form>

@@ -5,9 +5,8 @@
         <h1 id="dialog-title" class="signup">Sign up</h1>
       </header>
       <div class="input-group">
-        <input type="text" class="input" name="name" ng-model="user.name" placeholder="Name" required ng-minlength="3" ng-maxlength="20">
+        <input type="text" class="input" name="name" ng-model="user.name" placeholder="Name" required>
         <div class="input-error" ng-show="submitted && signupForm.name.$error.required">Required</div>
-        <div class="input-error" ng-show="submitted && (signupForm.name.$error.minlength || signupForm.name.$error.maxlength)">Length should be between 3 and 20</div>
         <div class="input-error" ng-show="errors.name">{{ errors.name.message }}</div>
       </div>
       <div class="input-group">

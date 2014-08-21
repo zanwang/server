@@ -22,7 +22,7 @@ func DomainList(params martini.Params, token *models.Token, r render.Render, db 
 }
 
 type DomainCreateForm struct {
-	Name string `form:"name"`
+	Name string `form:"name" json:"name"`
 }
 
 func (form *DomainCreateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
@@ -67,7 +67,7 @@ func DomainShow(r render.Render, domain *models.Domain) {
 }
 
 type DomainUpdateForm struct {
-	Name string `form:"name"`
+	Name string `form:"name" json:"name"`
 }
 
 func (form *DomainUpdateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {

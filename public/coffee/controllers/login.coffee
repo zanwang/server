@@ -8,9 +8,10 @@ angular.module('app').controller 'LoginCtrl', ($scope, Token, $state, Auth) ->
   $scope.submit = ->
     return if $scope.submitting
 
-    $scope.submitting = true
     $scope.submitted = true
     return if $scope.loginForm.$invalid
+
+    $scope.submitting = true
 
     $scope.token.$save().then (token) ->
       Auth.create token

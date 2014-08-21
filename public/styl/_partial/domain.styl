@@ -2,10 +2,8 @@
   position: relative
 
 #domain-create
+  @extend $box-lv1
   clearfix()
-  background: #fff
-  border-radius: 2px
-  box-shadow: 0 3px color-shadow
   padding: 10px 20px
   position: relative
 
@@ -62,9 +60,7 @@
   text-align: center
 
 .domain
-  background: #fff
-  box-shadow: 0 3px color-shadow
-  border-radius: 2px
+  @extend $box-lv1
   margin: 40px 0
   transition: 0.2s
   &.expanded
@@ -109,6 +105,12 @@
   clearfix()
   padding: 0 25px
 
+.domain-section-title
+  font-size: 16px
+  line-height: 1
+  padding: 1em 0
+  font-weight: bold
+
 .record-list-msg
   padding: 25px
   text-align: center
@@ -142,6 +144,7 @@
   font-family: font-sans
   border-radius: 2px
   transition: 0.2s
+  color: color-text
   &:focus
     border-color: color-orange
   &.ng-invalid.ng-dirty

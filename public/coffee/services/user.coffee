@@ -9,12 +9,17 @@ angular.module('app').factory 'User', ($resource, Auth, API_BASE_URL, $cacheFact
     get:
       method: 'GET'
       cache: true
+    create:
+      method: 'POST'
+      url: API_BASE_URL + 'users'
     update:
       method: 'PUT'
       interceptor:
         response: (res) ->
-          if res.status is 200 and res.data
-            httpCache.put API_BASE_URL + 'users/' + Auth.token.user_id, res.data
-            $rootScope.$emit 'userUpdated', res.data
+          data = res.resource
 
-          res
+          if res.status is 200 and data
+            httpCache.put API_BASE_URL + 'users/' + Auth.token.user_id, data
+            $rootScope.$emit 'userUpdated', data
+
+          data

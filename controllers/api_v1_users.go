@@ -1,7 +1,10 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
+
+	"code.google.com/p/go.crypto/bcrypt"
 
 	"github.com/coopernurse/gorp"
 	"github.com/dchest/uniuri"
@@ -71,33 +74,46 @@ func UserShow(r render.Render, user *models.User) {
 }
 
 type UserUpdateForm struct {
-	Name     string `form:"name"`
-	Password string `form:"password"`
-	Email    string `form:"email"`
+	Name        string `form:"name" json:"name"`
+	Password    string `form:"password" json:"password"`
+	OldPassword string `form:"old_password" json:"old_password"`
+	Email       string `form:"email" json:"email"`
 }
 
 func (form *UserUpdateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
 	v := Validation{Errors: &errors}
 
 	v.Validate(&form.Password, "password").Length(6, 50, "")
+	v.Validate(&form.OldPassword, "old_password").Length(6, 50, "")
 	v.Validate(&form.Email, "email").Email("")
+
+	log.Printf("form: %+v", form)
 
 	return errors
 }
 
-func UserUpdate(form UserUpdateForm, r render.Render, db *gorp.DbMap, user *models.User, mg mailgun.Mailgun) {
+func UserUpdate(form UserUpdateForm, r render.Render, db *gorp.DbMap, user *models.User, mg mailgun.Mailgun, conf *config.Config) {
 	if form.Name != "" {
 		user.Name = form.Name
 	}
 
 	if form.Password != "" {
+		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.OldPassword)); err != nil {
+			errors := NewErr([]string{"old_password"}, "214", "Password is wrong")
+			r.JSON(http.StatusForbidden, FormatErr(errors))
+			return
+		}
+
 		user.Password = generatePassword(form.Password)
 	}
 
 	if form.Email != "" && user.Email != form.Email {
 		user.Email = form.Email
-		user.Activated = false
 		user.ActivationToken = uniuri.NewLen(32)
+
+		if conf.EmailActivation {
+			user.Activated = false
+		}
 	}
 
 	if count, err := db.Update(user); count > 0 {

@@ -9,11 +9,12 @@ angular.module('app').controller 'SignupCtrl', ($scope, User, $state) ->
   $scope.submit = ->
     return if $scope.submitting
 
-    $scope.submitting = true
     $scope.submitted = true
     return if $scope.signupForm.$invalid
 
-    $scope.user.$save().then (data) ->
+    $scope.submitting = true
+
+    $scope.user.$create().then (data) ->
       $scope.success = true
     , (err) ->
       $scope.errors = err.data.errors

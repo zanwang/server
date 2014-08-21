@@ -18,16 +18,39 @@ Update a user.
 ### Body
 
 - **name**
-  + Required
+  + Optional
   + Type: `string`
 - **password**
-  + Required
+  + Optional
+  + Type: `string`
+  + Length: 6~50
+- **old_password**
+  + Optional
   + Type: `string`
   + Length: 6~50
 - **email**
-  + Required
+  + Optional
   + Type: `string`
 
 ### Response
 
 ### 200 (application/json) 
+
+- **id**
+  + Type: `int`
+- **name**
+  + Type: `string`
+- **email**
+  + Type: `string`
+- **avatar**
+  + Type: `string`
+- **created_at**
+  + Type: `string`
+- **updated_at**
+  + Type: `string`
+- **activated**
+  + Type: `bool`
+
+### 403
+
+Password is wrong. 

@@ -67,10 +67,10 @@ angular.module('app').controller 'DomainCtrl', ($scope, Record) ->
   $scope.create = ->
     return if $scope.submitting
 
-    $scope.submitting = true
     $scope.submitted = true
     return if $scope.recordForm.$invalid
 
+    $scope.submitting = true
     $scope.record.domain_id = $scope.domain.id
 
     $scope.record.$create().then (data) ->

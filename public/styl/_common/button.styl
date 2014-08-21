@@ -18,7 +18,7 @@
     color: #fff
     background: color-orange
     &:hover
-      background: darken(color-orange, 10%)
+      background: darken(@background, 10%)
   &.default
     color: #fff
     background: #ccc
@@ -35,3 +35,8 @@
   &.small
     padding: 6px 12px
     font-size: 0.9em
+  &.danger
+    color: #fff
+    background: color-pink
+    &:hover
+      background: lighten(@background, 10%)

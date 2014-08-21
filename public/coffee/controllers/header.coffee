@@ -9,6 +9,9 @@ angular.module('app').controller 'HeaderCtrl', ($scope, User, $state, $rootScope
   $rootScope.$on 'titleChanged', (event, title) ->
     $scope.title = title
 
+  $rootScope.$on 'userUpdated', (event, user) ->
+    $scope.user = angular.copy user
+
   $scope.logout = ->
     Token.delete().$promise.then ->
       Auth.destroy()

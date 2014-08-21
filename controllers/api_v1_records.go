@@ -21,11 +21,11 @@ func RecordList(r render.Render, db *gorp.DbMap, domain *models.Domain) {
 }
 
 type RecordCreateForm struct {
-	Name     string `form:"name"`
-	Type     string `form:"type"`
-	Value    string `form:"value"`
-	TTL      uint   `form:"ttl"`
-	Priority uint   `form:"priority"`
+	Name     string `form:"name" json:"name"`
+	Type     string `form:"type" json:"type"`
+	Value    string `form:"value" json:"value"`
+	TTL      uint   `form:"ttl" json:"ttl"`
+	Priority uint   `form:"priority" json:"priority"`
 }
 
 func (form *RecordCreateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
@@ -73,11 +73,11 @@ func RecordShow(r render.Render, record *models.Record) {
 }
 
 type RecordUpdateForm struct {
-	Name     string `form:"name"`
-	Type     string `form:"type"`
-	Value    string `form:"value"`
-	TTL      uint   `form:"ttl"`
-	Priority uint   `form:"priority"`
+	Name     string `form:"name" json:"name"`
+	Type     string `form:"type" json:"type"`
+	Value    string `form:"value" json:"value"`
+	TTL      uint   `form:"ttl" json:"ttl"`
+	Priority uint   `form:"priority" json:"priority"`
 }
 
 func (form *RecordUpdateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {

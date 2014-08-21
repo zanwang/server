@@ -13,8 +13,8 @@ import (
 )
 
 type TokenCreateForm struct {
-	Email    string `form:"email"`
-	Password string `form:"password"`
+	Email    string `form:"email" json:"email"`
+	Password string `form:"password" json:"password"`
 }
 
 func (form *TokenCreateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
