@@ -1,0 +1,42 @@
+#login-btn-group
+  clearfix()
+  padding-top: 10px
+  margin: 0 -8px
+
+.login-btn-wrap
+  width: 50%
+  float: left
+  padding: 5px 8px
+
+$login-btn
+  width: 100%
+  &:before
+    font-family: font-icon
+    padding-right: 8px
+    font-weight: normal
+
+#login-btn-facebook
+  @extend $login-btn
+  &:before
+    content: "\f09a"
+
+#login-btn-twitter
+  @extend $login-btn
+  &:before
+    content: "\f099"
+
+#login-btn-google
+  @extend $login-btn
+  &:before
+    content: "\f1a0"
+
+#login-btn-github
+  @extend $login-btn
+  &:before
+    content: "\f113"
+
+.login-text
+  color: color-minor
+  font-size: 0.9em
+  padding: 15px 0 5px
+  text-align: center

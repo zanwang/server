@@ -34,14 +34,26 @@ func FormatErr(errors interface{}) map[string]interface{} {
 	switch errors := errors.(type) {
 	case binding.Errors:
 		for _, err := range errors {
-			for _, field := range err.Fields() {
+			fields := err.Fields()
+
+			if len(fields) == 0 {
+				fields = []string{"common"}
+			}
+
+			for _, field := range fields {
 				if _, ok := result[field]; !ok {
 					msg := err.Error()
 
-					if code, err := strconv.Atoi(err.Kind()); err == nil {
-						result[field] = APIError{
-							Code:    code,
-							Message: msg,
+					switch err.Kind() {
+					case binding.TypeError:
+						result[field] = APIError{125, msg}
+					case binding.ContentTypeError:
+						result[field] = APIError{126, msg}
+					case binding.DeserializationError:
+						result[field] = APIError{127, msg}
+					default:
+						if code, err := strconv.Atoi(err.Kind()); err == nil {
+							result[field] = APIError{code, msg}
 						}
 					}
 				}

@@ -1,9 +1,9 @@
 angular = require 'angular'
 require 'angular-ui-router'
-require 'angular-cookies'
 require '../../bower_components/angular-resource/angular-resource'
+require '../../bower_components/ngstorage/ngstorage'
 
-angular.module 'app', ['ui.router', 'ngCookies', 'ngResource']
+angular.module 'app', ['ui.router', 'ngResource', 'ngStorage']
 
 require './services'
 require './directives'

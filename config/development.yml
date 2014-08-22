@@ -17,5 +17,9 @@ mailgun:
   private_key:
   public_key:
 
+facebook:
+  app_id: 807603115937156
+  app_secret: de55d5974b3be8e21ad13f19fbb114fc
+
 # For debugging
 email_activation: false

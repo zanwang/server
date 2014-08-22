@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "angular": "^1.2.19",
-    "angular-cookies": "^1.2.19",
     "angular-ui-router": "^0.2.10",
     "spin.js": "^2.0.1"
   }

@@ -2,6 +2,7 @@ angular = require 'angular'
 
 angular.module('app')
 .constant('API_BASE_URL', '/api/v1/')
+.constant('Config', require '../config/development.json')
 .config ($stateProvider, $urlRouterProvider, $locationProvider, $httpProvider) ->
   $urlRouterProvider.otherwise '/app'
   $locationProvider.html5Mode true

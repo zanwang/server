@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-martini/martini"
+	"github.com/huandu/facebook"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 	"github.com/tommy351/maji.moe/config"
@@ -26,6 +27,9 @@ func server() {
 	// Load mailgun
 	mg := mail(config)
 
+	// Facebook
+	fbApp := facebook.New(config.Facebook.AppID, config.Facebook.AppSecret)
+
 	// Create a classic martini
 	m := martini.Classic()
 	host := config.Server.Host
@@ -36,6 +40,7 @@ func server() {
 	m.Map(config)
 	m.Map(dbMap)
 	m.Map(mg)
+	m.Map(fbApp)
 
 	// Middlewares
 	store := sessions.NewCookieStore([]byte(secret))
@@ -67,6 +72,8 @@ func server() {
 			r.Put("", middlewares.CheckToken, middlewares.NeedAuthorization, controllers.TokenDestroy)
 			// DELETE /api/v1/tokens
 			r.Delete("", middlewares.CheckToken, middlewares.NeedAuthorization, controllers.TokenDestroy)
+			// POST /api/v1/tokens/facebook
+			r.Post("/facebook", middlewares.Validate(controllers.TokenFacebookForm{}), controllers.TokenFacebook)
 		})
 
 		r.Group("/users", func(r martini.Router) {

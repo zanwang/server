@@ -30,6 +30,11 @@ type Config struct {
 		PublicKey  string `yaml:"public_key"`
 	} `yaml:"mailgun"`
 
+	Facebook struct {
+		AppID     string `yaml:"app_id"`
+		AppSecret string `yaml:"app_secret"`
+	} `yaml:"facebook"`
+
 	EmailActivation bool `yaml:"email_activation"`
 }
 

@@ -20,6 +20,9 @@
 - 121: IP (v4 and v6)
 - 123: Domain
 - 124: Domain name
+- 125: Type
+- 126: Unsupported content type
+- 127: Deserialization error
 
 ### 2XX - Custom Error
 
@@ -29,3 +32,4 @@
 - 213: User does not exist
 - 214: Password is wrong
 - 215: User has been activated
+- 216: Facebook login failed

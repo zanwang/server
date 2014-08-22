@@ -1,15 +1,15 @@
 angular = require 'angular'
 
-angular.module('app').factory 'Auth', ($cookieStore) ->
+angular.module('app').factory 'Auth', ($localStorage) ->
   auth = {}
-  auth.token = $cookieStore.get 'token'
+  auth.token = $localStorage.token
 
   auth.create = (token) ->
     auth.token = token
-    $cookieStore.put 'token', token
+    $localStorage.token = token
 
   auth.destroy = ->
     auth.token = null
-    $cookieStore.remove 'token'
+    delete $localStorage.token
 
   auth
