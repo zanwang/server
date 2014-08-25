@@ -1,8 +1,9 @@
 angular = require 'angular'
 
-angular.module('app').controller 'LoginCtrl', ($scope, Token, $state, Auth, Facebook) ->
+angular.module('app').controller 'LoginCtrl', ($scope, Token, $state, Auth, Facebook, $window) ->
   $scope.submitted = false
   $scope.submitting = false
+  $scope.socialLogging = false
   $scope.token = new Token()
 
   $scope.submit = ->
@@ -21,6 +22,10 @@ angular.module('app').controller 'LoginCtrl', ($scope, Token, $state, Auth, Face
       $scope.submitting = false
 
   $scope.facebookLogin = ->
+    return if $scope.socialLogging
+
+    $scope.socialLogging = true
+
     Facebook.then (FB) ->
       FB.login (res) ->
         if res.status is 'connected'
@@ -30,4 +35,17 @@ angular.module('app').controller 'LoginCtrl', ($scope, Token, $state, Auth, Face
           $scope.token.$facebook().then (token) ->
             Auth.create token
             $state.go 'app.domains'
+          , (err) ->
+            console.log err
+            $scope.socialLogging = false
+        else
+          console.log res
+          $scope.socialLogging = false
       , scope: 'public_profile,email'
+
+  $scope.twitterLogin = ->
+    return if $scope.socialLogging
+
+    $scope.socialLogging = true
+
+    $window.open '/oauth/twitter/login', 'twitterLogin', 'width=500,height=400'

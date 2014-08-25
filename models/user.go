@@ -20,10 +20,19 @@ type User struct {
 	UpdatedAt       time.Time `db:"updated_at" json:"updated_at"`
 	Activated       bool      `db:"activated" json:"activated"`
 	ActivationToken string    `db:"activation_token" json:"-"`
+	FacebookID      string    `db:"facebook_id" json:"-"`
+	TwitterID       string    `db:"twitter_id" json:"-"`
+	GoogleID        string    `db:"google_id" json:"-"`
+	GithubID        string    `db:"github_id" json:"-"`
 	LoggedIn        bool      `db:"-" json:"-"`
 }
 
 func (data *User) PreInsert(s gorp.SqlExecutor) error {
+	// Check whether email has been taken
+	if count, _ := s.SelectInt("SELECT count(id) FROM users WHERE email=?", data.Email); count > 0 {
+		return ModelError{EmailTakenError}
+	}
+
 	now := time.Now()
 	data.CreatedAt = now
 	data.UpdatedAt = now

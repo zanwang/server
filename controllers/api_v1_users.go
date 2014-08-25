@@ -33,15 +33,7 @@ func (form *UserCreateForm) Validate(errors binding.Errors, req *http.Request) b
 }
 
 func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap, mg mailgun.Mailgun, conf *config.Config) {
-	var user models.User
-
-	if err := dbMap.SelectOne(&user, "SELECT email FROM users WHERE email=?", form.Email); err == nil {
-		errors := NewErr([]string{"email"}, "211", "Email has been taken")
-		r.JSON(http.StatusBadRequest, FormatErr(errors))
-		return
-	}
-
-	user = models.User{
+	user := models.User{
 		Name:            form.Name,
 		Password:        generatePassword(form.Password),
 		Email:           form.Email,
@@ -52,6 +44,12 @@ func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap, mg mail
 	user.Gravatar()
 
 	if err := dbMap.Insert(&user); err != nil {
+		if err.Error() == models.EmailTakenError {
+			errors := NewErr([]string{"email"}, "211", "Email has been taken")
+			r.JSON(http.StatusBadRequest, FormatErr(errors))
+			return
+		}
+
 		panic(err)
 	}
 

@@ -7,6 +7,7 @@ import (
 
 	"github.com/coopernurse/gorp"
 	"github.com/dchest/uniuri"
+	"github.com/go-martini/martini"
 	"github.com/huandu/facebook"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/render"
@@ -27,7 +28,7 @@ func (form *TokenCreateForm) Validate(errors binding.Errors, req *http.Request) 
 	return errors
 }
 
-func TokenCreate(form TokenCreateForm, r render.Render, db *gorp.DbMap, res http.ResponseWriter) {
+func TokenCreate(form TokenCreateForm, r render.Render, db *gorp.DbMap, c martini.Context) {
 	var user models.User
 
 	if err := db.SelectOne(&user, "SELECT id, password FROM users WHERE email=?", form.Email); err != nil {
@@ -44,27 +45,20 @@ func TokenCreate(form TokenCreateForm, r render.Render, db *gorp.DbMap, res http
 
 	token := models.Token{
 		UserID: user.ID,
-		Key:    uniuri.NewLen(32),
 	}
 
 	if err := db.Insert(&token); err != nil {
 		panic(err)
 	}
 
-	res.Header().Set("Pragma", "no-cache")
-	res.Header().Set("Cache-Control", "no-store")
-	r.JSON(http.StatusCreated, token)
+	c.Map(&token)
 }
 
-func TokenUpdate(db *gorp.DbMap, r render.Render, token *models.Token, res http.ResponseWriter) {
-	if count, err := db.Update(token); count > 0 {
-		res.Header().Set("Pragma", "no-cache")
-		res.Header().Set("Cache-Control", "no-store")
-		r.JSON(http.StatusOK, token)
-	} else if err != nil {
+func TokenUpdate(db *gorp.DbMap, token *models.Token, res http.ResponseWriter, c martini.Context) {
+	if count, err := db.Update(token); err != nil {
 		panic(err)
-	} else {
-		r.Status(http.StatusNotFound)
+	} else if count == 0 {
+		res.WriteHeader(http.StatusNotFound)
 	}
 }
 
@@ -92,7 +86,7 @@ func (form *TokenFacebookForm) Validate(errors binding.Errors, req *http.Request
 	return errors
 }
 
-func TokenFacebook(form TokenFacebookForm, db *gorp.DbMap, fb *facebook.App, r render.Render, w http.ResponseWriter) {
+func TokenFacebook(form TokenFacebookForm, db *gorp.DbMap, fb *facebook.App, r render.Render, c martini.Context) {
 	session := fb.Session(form.AccessToken)
 	res, err := session.Get("/"+form.UserID, nil)
 
@@ -103,23 +97,38 @@ func TokenFacebook(form TokenFacebookForm, db *gorp.DbMap, fb *facebook.App, r r
 	}
 
 	var user models.User
+	id := res["id"].(string)
 	name := res["name"].(string)
 	email := res["email"].(string)
 
-	if err := db.SelectOne(&user, "SELECT email FROM users WHERE email=?", email); err == nil {
-		errors := NewErr([]string{"email"}, "211", "Email has been taken")
-		r.JSON(http.StatusBadRequest, FormatErr(errors))
+	if err := db.SelectOne(&user, "SELECT id FROM users WHERE facebook_id=?", id); err == nil {
+		token := models.Token{
+			UserID: user.ID,
+		}
+
+		if err := db.Insert(&token); err != nil {
+			panic(err)
+		}
+
+		c.Map(&token)
 		return
 	}
 
 	user = models.User{
-		Name:      name,
-		Email:     email,
-		Avatar:    "//graph.facebook.com/" + form.UserID + "/picture",
-		Activated: true,
+		Name:       name,
+		Email:      email,
+		Avatar:     "//graph.facebook.com/" + form.UserID + "/picture",
+		Activated:  true,
+		FacebookID: id,
 	}
 
 	if err := db.Insert(&user); err != nil {
+		if err.Error() == models.EmailTakenError {
+			errors := NewErr([]string{"email"}, "211", "Email has been taken")
+			r.JSON(http.StatusBadRequest, FormatErr(errors))
+			return
+		}
+
 		panic(err)
 	}
 
@@ -132,9 +141,7 @@ func TokenFacebook(form TokenFacebookForm, db *gorp.DbMap, fb *facebook.App, r r
 		panic(err)
 	}
 
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Cache-Control", "no-store")
-	r.JSON(http.StatusCreated, token)
+	c.Map(&token)
 }
 
 func TokenTwitter() {

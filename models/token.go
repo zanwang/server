@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/coopernurse/gorp"
+	"github.com/dchest/uniuri"
 )
 
 const (
@@ -23,6 +24,7 @@ type Token struct {
 
 func (data *Token) PreInsert(s gorp.SqlExecutor) error {
 	now := time.Now()
+	data.Key = uniuri.NewLen(32)
 	data.CreatedAt = now
 	data.UpdatedAt = now
 	data.ExpiredAt = now.Add(tokenExpiry)

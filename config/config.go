@@ -35,6 +35,11 @@ type Config struct {
 		AppSecret string `yaml:"app_secret"`
 	} `yaml:"facebook"`
 
+	Twitter struct {
+		APIKey    string `yaml:"api_key"`
+		APISecret string `yaml:"api_secret"`
+	} `yaml:"twitter"`
+
 	EmailActivation bool `yaml:"email_activation"`
 }
 

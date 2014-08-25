@@ -6,16 +6,16 @@
       </header>
       <div id="login-btn-group">
         <div class="login-btn-wrap">
-          <button id="login-btn-facebook" class="btn facebook" ng-click="facebookLogin()">Facebook</button>
+          <button id="login-btn-facebook" class="btn facebook" ng-click="facebookLogin()" ng-disabled="socialLogging">Facebook</button>
         </div>
         <div class="login-btn-wrap">
-          <button id="login-btn-twitter" class="btn twitter" ng-click="twitterLogin()">Twitter</button>
+          <button id="login-btn-twitter" class="btn twitter" ng-click="twitterLogin()" ng-disabled="socialLogging">Twitter</button>
         </div>
         <div class="login-btn-wrap">
-          <button id="login-btn-google" class="btn google" ng-click="googleLogin()">Google</button>
+          <button id="login-btn-google" class="btn google" ng-click="googleLogin()" ng-disabled="socialLogging">Google</button>
         </div>
         <div class="login-btn-wrap">
-          <button id="login-btn-github" class="btn github" ng-click="githubLogin()">GitHub</button>
+          <button id="login-btn-github" class="btn github" ng-click="githubLogin()" ng-disabled="socialLogging">GitHub</button>
         </div>
       </div>
       <p class="login-text">or</p>

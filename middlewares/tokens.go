@@ -7,6 +7,7 @@ import (
 
 	"github.com/coopernurse/gorp"
 	"github.com/go-martini/martini"
+	"github.com/martini-contrib/render"
 	"github.com/tommy351/maji.moe/models"
 )
 
@@ -49,4 +50,11 @@ func CheckCurrentUser(user *models.User, res http.ResponseWriter) {
 	if !user.LoggedIn {
 		res.WriteHeader(http.StatusForbidden)
 	}
+}
+
+func ResponseToken(token *models.Token, res http.ResponseWriter, r render.Render) {
+	res.Header().Set("Pragma", "no-cache")
+	res.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	res.Header().Set("Expires", "0")
+	r.JSON(http.StatusOK, token)
 }

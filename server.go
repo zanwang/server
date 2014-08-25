@@ -7,9 +7,9 @@ import (
 	"strconv"
 
 	"github.com/go-martini/martini"
-	"github.com/huandu/facebook"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
+	"github.com/tommy351/maji.moe/auth"
 	"github.com/tommy351/maji.moe/config"
 	"github.com/tommy351/maji.moe/controllers"
 	"github.com/tommy351/maji.moe/middlewares"
@@ -27,8 +27,9 @@ func server() {
 	// Load mailgun
 	mg := mail(config)
 
-	// Facebook
-	fbApp := facebook.New(config.Facebook.AppID, config.Facebook.AppSecret)
+	// OAuth
+	fbApp := auth.LoadFacebook(config)
+	twitterConsumer := auth.LoadTwitter(config)
 
 	// Create a classic martini
 	m := martini.Classic()
@@ -41,6 +42,7 @@ func server() {
 	m.Map(dbMap)
 	m.Map(mg)
 	m.Map(fbApp)
+	m.Map(twitterConsumer)
 
 	// Middlewares
 	store := sessions.NewCookieStore([]byte(secret))
@@ -67,13 +69,13 @@ func server() {
 
 		r.Group("/tokens", func(r martini.Router) {
 			// POST /api/v1/tokens
-			r.Post("", middlewares.Validate(controllers.TokenCreateForm{}), controllers.TokenCreate)
+			r.Post("", middlewares.Validate(controllers.TokenCreateForm{}), controllers.TokenCreate, middlewares.ResponseToken)
 			// PUT /api/v1/tokens
-			r.Put("", middlewares.CheckToken, middlewares.NeedAuthorization, controllers.TokenDestroy)
+			r.Put("", middlewares.CheckToken, middlewares.NeedAuthorization, controllers.TokenUpdate, middlewares.ResponseToken)
 			// DELETE /api/v1/tokens
 			r.Delete("", middlewares.CheckToken, middlewares.NeedAuthorization, controllers.TokenDestroy)
 			// POST /api/v1/tokens/facebook
-			r.Post("/facebook", middlewares.Validate(controllers.TokenFacebookForm{}), controllers.TokenFacebook)
+			r.Post("/facebook", middlewares.Validate(controllers.TokenFacebookForm{}), controllers.TokenFacebook, middlewares.ResponseToken)
 		})
 
 		r.Group("/users", func(r martini.Router) {
@@ -125,6 +127,19 @@ func server() {
 
 		r.Group("/emails", func(r martini.Router) {
 			r.Post("/resend", middlewares.Validate(controllers.EmailResendForm{}), controllers.EmailResend)
+		})
+	})
+
+	m.Group("/oauth", func(r martini.Router) {
+		m.Group("/twitter", func(r martini.Router) {
+			// GET /oauth/twitter/login
+			m.Get("/login", controllers.OAuthTwitterLogin)
+			// GET /oauth/twitter/callback
+			m.Get("/callback", controllers.OAuthTwitterCallback)
+		})
+
+		m.Group("/google", func(r martini.Router) {
+			//
 		})
 	})
 
