@@ -12,5 +12,6 @@ deps:
 	go get github.com/onsi/gomega
 	go get github.com/franela/goblin
 
+test: export GO_ENV=test
 test:
-	GO_ENV=test go test ./server -v
+	go test ./server -v
