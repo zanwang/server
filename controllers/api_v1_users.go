@@ -1,67 +1,84 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
 
-	"code.google.com/p/go.crypto/bcrypt"
-
-	"github.com/coopernurse/gorp"
-	"github.com/dchest/uniuri"
-	"github.com/go-martini/martini"
-	"github.com/mailgun/mailgun-go"
-	"github.com/martini-contrib/binding"
-	"github.com/martini-contrib/render"
+	"github.com/gin-gonic/gin"
+	"github.com/mholt/binding"
 	"github.com/tommy351/maji.moe/config"
+	"github.com/tommy351/maji.moe/errors"
 	"github.com/tommy351/maji.moe/models"
+	"github.com/tommy351/maji.moe/util"
 )
 
-type UserCreateForm struct {
-	Name     string `form:"name" json:"name"`
-	Password string `form:"password" json:"password"`
-	Email    string `form:"email" json:"email"`
+type userForm struct {
+	Name        *string
+	OldPassword *string
+	Password    *string
+	Email       *string
 }
 
-func (form *UserCreateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
-	v := Validation{Errors: &errors}
-
-	v.Validate(&form.Name, "name").Required("")
-	v.Validate(&form.Password, "password").Required("").Length(6, 50, "")
-	v.Validate(&form.Email, "email").Required("").Email("")
-
-	return errors
+func (f *userForm) FieldMap() binding.FieldMap {
+	return binding.FieldMap{
+		&f.Name:        "name",
+		&f.OldPassword: "old_password",
+		&f.Password:    "password",
+		&f.Email:       "email",
+	}
 }
 
-func UserCreate(form UserCreateForm, r render.Render, dbMap *gorp.DbMap, mg mailgun.Mailgun, conf *config.Config) {
-	user := models.User{
-		Name:            form.Name,
-		Password:        generatePassword(form.Password),
-		Email:           form.Email,
-		Activated:       !conf.EmailActivation,
-		ActivationToken: uniuri.NewLen(32),
+func (a *APIv1) UserCreate(c *gin.Context) {
+	var form userForm
+	conf := config.Config
+
+	if err := binding.Bind(c.Request, &form); err != nil {
+		bindingError(err)
 	}
 
-	user.Gravatar()
+	if form.Name == nil {
+		panic(errors.New("name", errors.Required, "Name is required"))
+	}
 
-	if err := dbMap.Insert(&user); err != nil {
-		if err.Error() == models.EmailTakenError {
-			errors := NewErr([]string{"email"}, "211", "Email has been taken")
-			r.JSON(http.StatusBadRequest, FormatErr(errors))
-			return
-		}
+	if form.Password == nil {
+		panic(errors.New("password", errors.Required, "Password is required"))
+	}
 
+	if form.Email == nil {
+		panic(errors.New("email", errors.Required, "Email is required"))
+	}
+
+	user := models.User{
+		Name:  *form.Name,
+		Email: *form.Email,
+	}
+
+	if err := user.GeneratePassword(*form.Password); err != nil {
 		panic(err)
 	}
 
-	r.JSON(http.StatusCreated, user)
-	go sendActivationMail(&user, mg)
+	user.SetActivated(!conf.EmailActivation)
+	user.Gravatar()
+
+	if err := models.DB.Insert(&user); err != nil {
+		panic(err)
+	}
+
+	util.Render.JSON(c.Writer, http.StatusCreated, user)
+	go user.SendActivationMail()
 }
 
-func UserShow(r render.Render, user *models.User) {
-	if user.LoggedIn {
-		r.JSON(http.StatusOK, user)
+func (a *APIv1) UserShow(c *gin.Context) {
+	var isOwner bool
+	user := c.MustGet("user").(*models.User)
+
+	if token, ok := c.MustGet("token").(*models.Token); ok {
+		isOwner = user.ID == token.UserID
+	}
+
+	if isOwner {
+		util.Render.JSON(c.Writer, http.StatusOK, user)
 	} else {
-		r.JSON(http.StatusOK, map[string]interface{}{
+		util.Render.JSON(c.Writer, http.StatusOK, map[string]interface{}{
 			"id":         user.ID,
 			"name":       user.Name,
 			"avatar":     user.Avatar,
@@ -71,87 +88,59 @@ func UserShow(r render.Render, user *models.User) {
 	}
 }
 
-type UserUpdateForm struct {
-	Name        string `form:"name" json:"name"`
-	Password    string `form:"password" json:"password"`
-	OldPassword string `form:"old_password" json:"old_password"`
-	Email       string `form:"email" json:"email"`
-}
+func (a *APIv1) UserUpdate(c *gin.Context) {
+	var form userForm
+	conf := config.Config
 
-func (form *UserUpdateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
-	v := Validation{Errors: &errors}
-
-	v.Validate(&form.Password, "password").Length(6, 50, "")
-	v.Validate(&form.OldPassword, "old_password").Length(6, 50, "")
-	v.Validate(&form.Email, "email").Email("")
-
-	log.Printf("form: %+v", form)
-
-	return errors
-}
-
-func UserUpdate(form UserUpdateForm, r render.Render, db *gorp.DbMap, user *models.User, mg mailgun.Mailgun, conf *config.Config) {
-	if form.Name != "" {
-		user.Name = form.Name
+	if err := binding.Bind(c.Request, &form); err != nil {
+		bindingError(err)
 	}
 
-	if form.Password != "" {
-		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.OldPassword)); err != nil {
-			errors := NewErr([]string{"old_password"}, "214", "Password is wrong")
-			r.JSON(http.StatusForbidden, FormatErr(errors))
-			return
+	user := c.MustGet("user").(*models.User)
+
+	if form.Name != nil {
+		user.Name = *form.Name
+	}
+
+	if form.Password != nil {
+		if form.OldPassword == nil {
+			panic(errors.New("old_password", errors.Required, "Current password is required"))
 		}
 
-		user.Password = generatePassword(form.Password)
+		if len(user.Password) > 0 {
+			if err := user.Authenticate(*form.OldPassword); err != nil {
+				panic(err)
+			}
+		}
+
+		if err := user.GeneratePassword(*form.Password); err != nil {
+			panic(err)
+		}
 	}
 
-	if form.Email != "" && user.Email != form.Email {
-		user.Email = form.Email
-		user.ActivationToken = uniuri.NewLen(32)
+	if form.Email != nil && user.Email != *form.Email {
+		user.Email = *form.Email
+		user.Gravatar()
 
 		if conf.EmailActivation {
-			user.Activated = false
+			user.SetActivated(false)
 		}
 	}
 
-	if count, err := db.Update(user); count > 0 {
-		r.JSON(http.StatusOK, user)
-		go sendActivationMail(user, mg)
-	} else {
+	if _, err := models.DB.Update(user); err != nil {
 		panic(err)
 	}
+
+	util.Render.JSON(c.Writer, http.StatusOK, user)
+	go user.SendActivationMail()
 }
 
-func UserDestroy(res http.ResponseWriter, db *gorp.DbMap, user *models.User) {
-	if count, err := db.Delete(user); count > 0 {
-		res.WriteHeader(http.StatusNoContent)
-	} else if err != nil {
+func (a *APIv1) UserDestroy(c *gin.Context) {
+	user := c.MustGet("user").(*models.User)
+
+	if _, err := models.DB.Delete(user); err != nil {
 		panic(err)
-	} else {
-		res.WriteHeader(http.StatusNotFound)
-	}
-}
-
-func UserActivate(params martini.Params, db *gorp.DbMap, r render.Render) {
-	var user models.User
-
-	if err := db.SelectOne(&user, "SELECT * FROM users WHERE activation_token=?", params["token"]); err != nil {
-		r.HTML(http.StatusNotFound, "error/404", nil)
-		return
 	}
 
-	if user.Activated {
-		r.Redirect("/app")
-		return
-	}
-
-	user.Activated = true
-
-	if count, err := db.Update(&user); count > 0 {
-		r.Redirect("/app")
-	} else if err != nil {
-		panic(err)
-	} else {
-		r.Status(http.StatusNotFound)
-	}
+	c.Writer.WriteHeader(http.StatusNoContent)
 }

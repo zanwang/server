@@ -1,0 +1,9 @@
+language: go
+
+go:
+  - 1.3
+  - tip
+
+env: GO_ENV=test
+install: make deps
+script: make test

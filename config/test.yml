@@ -1,0 +1,31 @@
+server:
+  host: localhost
+  port: 9000
+  secret: dxxeQUOx5SPQMgdeoi8JTSKj1fRnFA6G
+  logger: false
+
+database:
+  type: sqlite3
+  path: /tmp/testing.sqlite
+
+reserved_domains:
+  - www
+  - email
+  - api
+  - static
+
+mailgun:
+  domain:
+  private_key:
+  public_key:
+
+facebook:
+  app_id:
+  app_secret:
+
+twitter:
+  api_key:
+  api_secret:
+
+# For debugging
+email_activation: false

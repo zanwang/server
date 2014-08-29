@@ -4,17 +4,19 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 
-	"github.com/go-martini/martini"
+	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v1"
 )
 
 // Config stores global configuration
-type Config struct {
+type config struct {
 	Server struct {
 		Host   string `yaml:"host"`
 		Port   int    `yaml:"port"`
 		Secret string `yaml:"secret"`
+		Logger bool   `yaml:"logger"`
 	} `yaml:"server"`
 
 	Database struct {
@@ -43,35 +45,58 @@ type Config struct {
 	EmailActivation bool `yaml:"email_activation"`
 }
 
-const configDir = "config"
+const (
+	configDir   = "config"
+	Development = "dev"
+	Production  = "prod"
+	Testing     = "test"
+)
 
-var acceptExtnameForConfig = []string{"yml", "yaml"}
-var baseDir, _ = os.Getwd()
+var (
+	configExtname = []string{"yml", "yaml"}
+	BaseDir       string
+	Config        config
+	Env           string
+)
 
 // Load loads configuration file
-func Load() *Config {
-	env := martini.Env
-	obj := Config{}
-
-	for _, ext := range acceptExtnameForConfig {
-		path := filepath.Join(baseDir, configDir, env+"."+ext)
-
-		if exists(path) {
-			data, err := ioutil.ReadFile(path)
-
-			if err != nil {
-				panic(err)
-			}
-
-			if err = yaml.Unmarshal(data, &obj); err != nil {
-				panic(err)
-			}
-
-			break
-		}
+func init() {
+	if Env = os.Getenv("GO_ENV"); Env == "" {
+		Env = Development
 	}
 
-	return &obj
+	switch Env {
+	case Production:
+		gin.SetMode(gin.ReleaseMode)
+	case Testing:
+		gin.SetMode(gin.TestMode)
+	default:
+		gin.SetMode(gin.DebugMode)
+	}
+
+	if _, path, _, ok := runtime.Caller(1); ok {
+		BaseDir = filepath.Dir(filepath.Dir(path))
+	}
+
+	for _, ext := range configExtname {
+		path := filepath.Join(BaseDir, configDir, Env+"."+ext)
+
+		if !exists(path) {
+			continue
+		}
+
+		data, err := ioutil.ReadFile(path)
+
+		if err != nil {
+			panic(err)
+		}
+
+		if err = yaml.Unmarshal(data, &Config); err != nil {
+			panic(err)
+		}
+
+		break
+	}
 }
 
 func exists(path string) bool {

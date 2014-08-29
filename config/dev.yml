@@ -2,6 +2,7 @@ server:
   host: localhost
   port: 9000
   secret: dxxeQUOx5SPQMgdeoi8JTSKj1fRnFA6G
+  logger: true
 
 database:
   type: sqlite3
@@ -11,6 +12,7 @@ reserved_domains:
   - www
   - email
   - api
+  - static
 
 mailgun:
   domain:
