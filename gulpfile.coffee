@@ -6,6 +6,7 @@ source = require 'vinyl-source-stream'
 stringify = require 'stringify'
 coffeeify = require 'coffeeify'
 path = require 'path'
+gutil = require 'gulp-util'
 
 filterMinifiedFiles = $.filter (file) ->
   extname = path.extname file.path
@@ -13,12 +14,18 @@ filterMinifiedFiles = $.filter (file) ->
 
   !/\.min$/.test src
 
+errorHandler = (err) ->
+  gutil.beep()
+  console.error err
+  @emit 'end'
+
 gulp.task 'stylus', ->
   gulp.src 'public/styl/*.styl'
     .pipe $.filter (file) ->
       !/\/_/.test file.path
     .pipe $.stylus
       use: [nib()]
+    .on 'error', errorHandler
     .pipe gulp.dest 'public/css'
 
 gulp.task 'browserify', ->
@@ -29,6 +36,7 @@ gulp.task 'browserify', ->
   .transform coffeeify
   .require './public/coffee/app.coffee', entry : true
   .bundle()
+  .on 'error', errorHandler
   .pipe source 'app.js'
   .pipe gulp.dest 'public/js'
 
@@ -38,6 +46,7 @@ gulp.task 'minify-js', ['browserify'], ->
     .pipe $.ngAnnotate()
     .pipe $.uglify()
     .pipe $.rename suffix: '.min'
+    .on 'error', errorHandler
     .pipe gulp.dest 'public/js'
 
 gulp.task 'minify-css', ['stylus'], ->
@@ -45,6 +54,7 @@ gulp.task 'minify-css', ['stylus'], ->
     .pipe filterMinifiedFiles
     .pipe $.minifyCss()
     .pipe $.rename suffix: '.min'
+    .on 'error', errorHandler
     .pipe gulp.dest 'public/css'
 
 gulp.task 'watch', ->

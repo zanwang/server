@@ -12,6 +12,10 @@ deps:
 	go get github.com/onsi/gomega
 	go get github.com/franela/goblin
 
+install: deps
+	bower install
+	npm install
+
 test: export GO_ENV=test
 test:
 	go test ./server -v
