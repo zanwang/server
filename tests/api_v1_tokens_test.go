@@ -13,6 +13,7 @@ func (s *TestSuite) APIv1Token() {
 	s.Describe("Token", func() {
 		s.APIv1TokenCreate()
 		s.APIv1TokenUpdate()
+		s.APIv1TokenDestroy()
 	})
 }
 
@@ -251,6 +252,48 @@ func (s *TestSuite) APIv1TokenUpdate() {
 		s.It("Unauthorized (without token)", func() {
 			var err errors.API
 			r := s.Request("PUT", "/api/v1/tokens", &requestOptions{})
+
+			Expect(r.Code).To(Equal(http.StatusUnauthorized))
+
+			s.ParseJSON(r.Body, &err)
+
+			Expect(err.Code).To(Equal(errors.TokenRequired))
+			Expect(err.Message).To(Equal("Token is required"))
+		})
+
+		s.After(func() {
+			s.deleteUser1()
+			s.deleteToken1()
+		})
+	})
+}
+
+func (s *TestSuite) APIv1TokenDestroy() {
+	s.Describe("Destroy", func() {
+		s.Before(func() {
+			s.createUser1()
+			s.createToken1()
+		})
+
+		s.It("Success", func() {
+			token := s.Get("token").(*models.Token)
+			r := s.Request("DELETE", "/api/v1/tokens", &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusNoContent))
+
+			// Check whether token still exists
+			if count, _ := models.DB.SelectInt("SELECT * FROM tokens WHERE key=?", token.Key); count > 0 {
+				s.Fail("Token still exists")
+			}
+		})
+
+		s.It("Unauthorized (without token)", func() {
+			var err errors.API
+			r := s.Request("DELETE", "/api/v1/tokens", &requestOptions{})
 
 			Expect(r.Code).To(Equal(http.StatusUnauthorized))
 

@@ -737,7 +737,6 @@ func (s *TestSuite) APIv1UserDestroy() {
 				Headers: map[string]string{
 					"Authorization": "token " + token.Key,
 				},
-				Body: map[string]string{},
 			})
 
 			Expect(r.Code).To(Equal(http.StatusNoContent))
