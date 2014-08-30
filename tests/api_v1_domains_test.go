@@ -14,6 +14,7 @@ func (s *TestSuite) APIv1Domain() {
 	s.Describe("Domain", func() {
 		s.APIv1DomainCreate()
 		s.APIv1DomainList()
+		s.APIv1DomainShow()
 	})
 }
 
@@ -373,6 +374,49 @@ func (s *TestSuite) APIv1DomainList() {
 			s.deleteToken2()
 			s.deleteDomain1()
 			s.deleteDomain2()
+		})
+	})
+}
+
+func (s *TestSuite) APIv1DomainShow() {
+	s.Describe("Show", func() {
+		s.Before(func() {
+			s.createUser1()
+			s.createToken1()
+			s.createDomain1()
+		})
+
+		s.It("Success", func() {
+			var d map[string]interface{}
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("GET", "/api/v1/domains/"+strconv.FormatInt(domain.ID, 10), nil)
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &d)
+			Expect(d["id"]).To(BeEquivalentTo(domain.ID))
+			Expect(d["name"]).To(Equal(domain.Name))
+			Expect(d["user_id"]).To(BeEquivalentTo(domain.UserID))
+			Expect(d).To(HaveKey("created_at"))
+			Expect(d).To(HaveKey("updated_at"))
+			Expect(d).To(HaveKey("expired_at"))
+		})
+
+		s.It("Domain does not exist", func() {
+			var err errors.API
+			r := s.Request("GET", "/api/v1/domains/9999999999", nil)
+
+			Expect(r.Code).To(Equal(http.StatusNotFound))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.DomainNotExist))
+			Expect(err.Message).To(Equal("Domain does not exist"))
+		})
+
+		s.After(func() {
+			s.deleteUser1()
+			s.deleteToken1()
+			s.deleteDomain1()
 		})
 	})
 }
