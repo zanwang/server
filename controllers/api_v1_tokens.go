@@ -23,11 +23,11 @@ func (f *tokenForm) FieldMap() binding.FieldMap {
 	}
 }
 
-func responseToken(c *gin.Context, token *models.Token) {
+func responseToken(c *gin.Context, status int, token *models.Token) {
 	c.Writer.Header().Set("Pragma", "no-cache")
 	c.Writer.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	c.Writer.Header().Set("Expires", "0")
-	util.Render.JSON(c.Writer, http.StatusCreated, token)
+	util.Render.JSON(c.Writer, status, token)
 }
 
 func (a *APIv1) TokenCreate(c *gin.Context) {
@@ -69,7 +69,7 @@ func (a *APIv1) TokenCreate(c *gin.Context) {
 		panic(err)
 	}
 
-	responseToken(c, &token)
+	responseToken(c, http.StatusCreated, &token)
 }
 
 func (a *APIv1) TokenUpdate(c *gin.Context) {
@@ -79,7 +79,7 @@ func (a *APIv1) TokenUpdate(c *gin.Context) {
 		panic(err)
 	}
 
-	responseToken(c, token)
+	responseToken(c, http.StatusOK, token)
 }
 
 func (a *APIv1) TokenDestroy(c *gin.Context) {

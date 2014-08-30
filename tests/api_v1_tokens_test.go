@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"time"
 
 	. "github.com/onsi/gomega"
 	"github.com/tommy351/maji.moe/errors"
@@ -11,6 +12,7 @@ import (
 func (s *TestSuite) APIv1Token() {
 	s.Describe("Token", func() {
 		s.APIv1TokenCreate()
+		s.APIv1TokenUpdate()
 	})
 }
 
@@ -19,10 +21,14 @@ func (s *TestSuite) createToken(key string, user *models.User, body map[string]s
 	r := s.Request("POST", "/api/v1/tokens", &requestOptions{Body: body})
 
 	Expect(r.Code).To(Equal(http.StatusCreated))
+	Expect(r.Header().Get("Pragma")).To(Equal("no-cache"))
+	Expect(r.Header().Get("Cache-Control")).To(Equal("no-cache, no-store, must-revalidate"))
+	Expect(r.Header().Get("Expires")).To(Equal("0"))
 
 	s.ParseJSON(r.Body, &token)
 	Expect(token.Key).To(HaveLen(32))
 	Expect(token.UserID).To(Equal(user.ID))
+	Expect(token.UpdatedAt.Add(time.Hour * 24 * 7)).To(Equal(token.ExpiredAt))
 
 	s.Set(key, &token)
 }
@@ -206,6 +212,52 @@ func (s *TestSuite) APIv1TokenCreate() {
 			Expect(err.Field).To(Equal("password"))
 			Expect(err.Code).To(Equal(errors.PasswordUnset))
 			Expect(err.Message).To(Equal("Password has not been set"))
+		})
+
+		s.After(func() {
+			s.deleteUser1()
+			s.deleteToken1()
+		})
+	})
+}
+
+func (s *TestSuite) APIv1TokenUpdate() {
+	s.Describe("Update", func() {
+		s.Before(func() {
+			s.createUser1()
+			s.createToken1()
+		})
+
+		s.It("Success", func() {
+			var t map[string]interface{}
+			token := s.Get("token").(*models.Token)
+			r := s.Request("PUT", "/api/v1/tokens", &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+			Expect(r.Header().Get("Pragma")).To(Equal("no-cache"))
+			Expect(r.Header().Get("Cache-Control")).To(Equal("no-cache, no-store, must-revalidate"))
+			Expect(r.Header().Get("Expires")).To(Equal("0"))
+
+			s.ParseJSON(r.Body, &t)
+
+			Expect(t["key"]).To(Equal(token.Key))
+			Expect(t["user_id"]).To(BeEquivalentTo(token.UserID))
+		})
+
+		s.It("Unauthorized (without token)", func() {
+			var err errors.API
+			r := s.Request("PUT", "/api/v1/tokens", &requestOptions{})
+
+			Expect(r.Code).To(Equal(http.StatusUnauthorized))
+
+			s.ParseJSON(r.Body, &err)
+
+			Expect(err.Code).To(Equal(errors.TokenRequired))
+			Expect(err.Message).To(Equal("Token is required"))
 		})
 
 		s.After(func() {
