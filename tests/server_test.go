@@ -53,20 +53,31 @@ type requestOptions struct {
 	Body    interface{}
 }
 
-func (s *TestSuite) Request(method, url string, options *requestOptions) *httptest.ResponseRecorder {
+func (s *TestSuite) Request(method, uri string, options *requestOptions) *httptest.ResponseRecorder {
 	var body io.Reader
 
-	if options != nil {
-		if options.Body != nil {
-			if b, err := json.Marshal(options.Body); err != nil {
-				panic(err)
-			} else {
-				body = bytes.NewReader(b)
-			}
+	if options != nil && options.Body != nil {
+		if b, err := json.Marshal(options.Body); err != nil {
+			panic(err)
+		} else {
+			body = bytes.NewReader(b)
 		}
 	}
 
-	req, err := http.NewRequest(method, url, body)
+	/* Form
+	v := url.Values{}
+
+	if options != nil && options.Body != nil {
+		switch body := options.Body.(type) {
+		case map[string]string:
+			for key, val := range body {
+				v.Add(key, val)
+			}
+		}
+	}*/
+
+	// req, err := http.NewRequest(method, uri, strings.NewReader(v.Encode()))
+	req, err := http.NewRequest(method, uri, body)
 	w := httptest.NewRecorder()
 
 	if options != nil && options.Headers != nil {
@@ -76,6 +87,7 @@ func (s *TestSuite) Request(method, url string, options *requestOptions) *httpte
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	// req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	s.server.ServeHTTP(w, req)
 	Expect(err).To(BeNil())
 

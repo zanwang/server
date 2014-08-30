@@ -22,11 +22,11 @@ func (a *APIv1) RecordList(c *gin.Context) {
 }
 
 type recordForm struct {
-	Name     *string
-	Type     *string
-	Value    *string
-	TTL      *uint
-	Priority *uint
+	Name     *string `json:"name"`
+	Type     *string `json:"type"`
+	Value    *string `json:"value"`
+	TTL      *uint   `json:"ttl"`
+	Priority *uint   `json:"priority"`
 }
 
 func (f *recordForm) FieldMap() binding.FieldMap {

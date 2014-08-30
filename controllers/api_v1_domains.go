@@ -22,7 +22,7 @@ func (a *APIv1) DomainList(c *gin.Context) {
 }
 
 type domainForm struct {
-	Name *string
+	Name *string `json:"name"`
 }
 
 func (f *domainForm) FieldMap() binding.FieldMap {

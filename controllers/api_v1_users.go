@@ -5,17 +5,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/mholt/binding"
-	"github.com/tommy351/maji.moe/config"
 	"github.com/tommy351/maji.moe/errors"
 	"github.com/tommy351/maji.moe/models"
 	"github.com/tommy351/maji.moe/util"
 )
 
 type userForm struct {
-	Name        *string
-	OldPassword *string
-	Password    *string
-	Email       *string
+	Name        *string `json:"name"`
+	OldPassword *string `json:"old_password"`
+	Password    *string `json:"password"`
+	Email       *string `json:"email"`
 }
 
 func (f *userForm) FieldMap() binding.FieldMap {
@@ -29,7 +28,6 @@ func (f *userForm) FieldMap() binding.FieldMap {
 
 func (a *APIv1) UserCreate(c *gin.Context) {
 	var form userForm
-	conf := config.Config
 
 	if err := binding.Bind(c.Request, &form); err != nil {
 		bindingError(err)
@@ -56,7 +54,7 @@ func (a *APIv1) UserCreate(c *gin.Context) {
 		panic(err)
 	}
 
-	user.SetActivated(!conf.EmailActivation)
+	user.SetActivated(false)
 	user.Gravatar()
 
 	if err := models.DB.Insert(&user); err != nil {
@@ -90,27 +88,43 @@ func (a *APIv1) UserShow(c *gin.Context) {
 }
 
 func (a *APIv1) UserUpdate(c *gin.Context) {
+	user := c.MustGet("user").(*models.User)
+	token := c.MustGet("token").(*models.Token)
+
+	if token.UserID != user.ID {
+		panic(errors.API{
+			Status:  http.StatusForbidden,
+			Code:    errors.UserForbidden,
+			Message: "You are forbidden to edit this user",
+		})
+	}
+
 	var form userForm
-	conf := config.Config
 
 	if err := binding.Bind(c.Request, &form); err != nil {
 		bindingError(err)
 	}
-
-	user := c.MustGet("user").(*models.User)
 
 	if form.Name != nil {
 		user.Name = *form.Name
 	}
 
 	if form.Password != nil {
-		if form.OldPassword == nil {
-			panic(errors.New("old_password", errors.Required, "Current password is required"))
-		}
-
 		if len(user.Password) > 0 {
+			if form.OldPassword == nil {
+				panic(errors.New("old_password", errors.Required, "Current password is required"))
+			}
+
 			if err := user.Authenticate(*form.OldPassword); err != nil {
-				panic(err)
+				if e, ok := err.(errors.API); ok {
+					if e.Status == http.StatusUnauthorized {
+						e.Status = http.StatusForbidden
+					}
+
+					panic(e)
+				} else {
+					panic(err)
+				}
 			}
 		}
 
@@ -122,10 +136,7 @@ func (a *APIv1) UserUpdate(c *gin.Context) {
 	if form.Email != nil && user.Email != *form.Email {
 		user.Email = *form.Email
 		user.Gravatar()
-
-		if conf.EmailActivation {
-			user.SetActivated(false)
-		}
+		user.SetActivated(false)
 	}
 
 	if _, err := models.DB.Update(user); err != nil {

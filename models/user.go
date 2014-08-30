@@ -62,8 +62,10 @@ func (data *User) Validate(s gorp.SqlExecutor) error {
 		return errors.New("email", errors.Email, "Email is invalid")
 	}
 
-	if id, err := s.SelectInt("SELECT id FROM users WHERE email=?", data.Email); err == nil {
-		if data.ID != id {
+	var user User
+
+	if err := s.SelectOne(&user, "SELECT id FROM users WHERE email=?", data.Email); err == nil {
+		if data.ID != user.ID {
 			return errors.New("email", errors.EmailUsed, "Email has been taken")
 		}
 	}
@@ -166,7 +168,7 @@ func (data *User) SetActivated(activated bool) {
 }
 
 func (data *User) SendActivationMail() {
-	if data.Activated {
+	if data.Activated || !config.Config.EmailActivation {
 		return
 	}
 

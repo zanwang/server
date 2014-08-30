@@ -99,7 +99,7 @@ func (s *TestSuite) APIv1TokenCreate() {
 			Expect(err.Message).To(Equal("Password is required"))
 		})
 
-		s.It("Email format", func() {
+		s.It("Invalid email", func() {
 			var err errors.API
 			r := s.Request("POST", "/api/v1/tokens", &requestOptions{
 				Body: map[string]string{
@@ -133,12 +133,29 @@ func (s *TestSuite) APIv1TokenCreate() {
 			Expect(err.Message).To(Equal("User does not exist"))
 		})
 
-		s.It("Password length", func() {
+		s.It("Password too short", func() {
 			var err errors.API
 			r := s.Request("POST", "/api/v1/tokens", &requestOptions{
 				Body: map[string]string{
 					"email":    Fixture.Users[0].Email,
 					"password": "123",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("password"))
+			Expect(err.Code).To(Equal(errors.Length))
+			Expect(err.Message).To(Equal("The length of password must be between 6-50"))
+		})
+
+		s.It("Password too long", func() {
+			var err errors.API
+			r := s.Request("POST", "/api/v1/tokens", &requestOptions{
+				Body: map[string]string{
+					"email":    Fixture.Users[0].Email,
+					"password": "123464646546546546546546546546546546546546546546546546546546546",
 				},
 			})
 

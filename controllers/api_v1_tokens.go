@@ -12,8 +12,8 @@ import (
 )
 
 type tokenForm struct {
-	Email    *string
-	Password *string
+	Email    *string `json:"email"`
+	Password *string `json:"password"`
 }
 
 func (f *tokenForm) FieldMap() binding.FieldMap {
