@@ -15,7 +15,7 @@ const (
 
 var (
 	rDomainName     = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z\\d\\-]*$")
-	reservedDomains = []string{"www", "api", "email", "static"}
+	reservedDomains = []string{"www", "api", "email", "static", "test"}
 )
 
 // Domain model
@@ -54,8 +54,10 @@ func (data *Domain) Validate(s gorp.SqlExecutor) error {
 		return errors.New("name", errors.DomainReserved, "Domain name has been reserved")
 	}
 
-	if id, err := s.SelectInt("SELECT id FROM domains WHERE name=?", data.Name); err == nil {
-		if data.ID != id {
+	var domain Domain
+
+	if err := s.SelectOne(&domain, "SELECT id FROM domains WHERE name=?", data.Name); err == nil {
+		if data.ID != domain.ID {
 			return errors.New("name", errors.DomainUsed, "Domain name has been taken")
 		}
 	}

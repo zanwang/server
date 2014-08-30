@@ -15,11 +15,16 @@ func (s *TestSuite) APIv1Domain() {
 		s.APIv1DomainCreate()
 		s.APIv1DomainList()
 		s.APIv1DomainShow()
+		s.APIv1DomainUpdate()
 	})
 }
 
 func domainCreateURL(id int64) string {
 	return "/api/v1/users/" + strconv.FormatInt(id, 10) + "/domains"
+}
+
+func domainURL(id int64) string {
+	return "/api/v1/domains/" + strconv.FormatInt(id, 10)
 }
 
 func (s *TestSuite) createDomain(key string, token *models.Token, body map[string]string) {
@@ -389,7 +394,7 @@ func (s *TestSuite) APIv1DomainShow() {
 		s.It("Success", func() {
 			var d map[string]interface{}
 			domain := s.Get("domain").(*models.Domain)
-			r := s.Request("GET", "/api/v1/domains/"+strconv.FormatInt(domain.ID, 10), nil)
+			r := s.Request("GET", domainURL(domain.ID), nil)
 
 			Expect(r.Code).To(Equal(http.StatusOK))
 
@@ -404,7 +409,7 @@ func (s *TestSuite) APIv1DomainShow() {
 
 		s.It("Domain does not exist", func() {
 			var err errors.API
-			r := s.Request("GET", "/api/v1/domains/9999999999", nil)
+			r := s.Request("GET", domainURL(9999999999), nil)
 
 			Expect(r.Code).To(Equal(http.StatusNotFound))
 
@@ -416,6 +421,205 @@ func (s *TestSuite) APIv1DomainShow() {
 		s.After(func() {
 			s.deleteUser1()
 			s.deleteToken1()
+			s.deleteDomain1()
+		})
+	})
+}
+
+func (s *TestSuite) APIv1DomainUpdate() {
+	s.Describe("Update", func() {
+		s.Before(func() {
+			s.createUser1()
+			s.createUser2()
+			s.createToken1()
+			s.createToken2()
+			s.createDomain1()
+			s.createDomain2()
+		})
+
+		s.It("Success", func() {
+			var d map[string]interface{}
+			token := s.Get("token").(*models.Token)
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("PUT", domainURL(domain.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": "foo",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &d)
+			Expect(d["id"]).To(BeEquivalentTo(domain.ID))
+			Expect(d["name"]).To(Equal("foo"))
+			Expect(d["user_id"]).To(BeEquivalentTo(domain.UserID))
+			Expect(d).To(HaveKey("created_at"))
+			Expect(d).To(HaveKey("updated_at"))
+			Expect(d).To(HaveKey("expired_at"))
+
+			domain.Name = d["name"].(string)
+		})
+
+		s.It("Forbidden (with wrong token)", func() {
+			var err errors.API
+			token := s.Get("token2").(*models.Token)
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("PUT", domainURL(domain.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": "foo",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusForbidden))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.DomainForbidden))
+			Expect(err.Message).To(Equal("You are forbidden to access this domain"))
+		})
+
+		s.It("Unauthorized (without token)", func() {
+			var err errors.API
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("PUT", domainURL(domain.ID), &requestOptions{
+				Body: map[string]string{
+					"name": "foo",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusUnauthorized))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.TokenRequired))
+			Expect(err.Message).To(Equal("Token is required"))
+		})
+
+		s.It("Domain name started with number", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("PUT", domainURL(domain.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": "1a2b",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("name"))
+			Expect(err.Code).To(Equal(errors.DomainName))
+			Expect(err.Message).To(Equal("Domain name is invalid"))
+		})
+
+		s.It("Domain name with special characters", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("PUT", domainURL(domain.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": "中文",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("name"))
+			Expect(err.Code).To(Equal(errors.DomainName))
+			Expect(err.Message).To(Equal("Domain name is invalid"))
+		})
+
+		s.It("Domain name too long", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("PUT", domainURL(domain.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": "erfwoerjweijrliejrwejrliwejrwjerliwwjeroiljweloirjweolirireorweorjweorwoerjwoerwoeirlsj",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("name"))
+			Expect(err.Code).To(Equal(errors.MaxLength))
+			Expect(err.Message).To(Equal("Maximum length of name is 63"))
+		})
+
+		s.It("Domain name has been taken", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("PUT", domainURL(domain.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": Fixture.Domains[1].Name,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("name"))
+			Expect(err.Code).To(Equal(errors.DomainUsed))
+			Expect(err.Message).To(Equal("Domain name has been taken"))
+		})
+
+		s.It("Domain name has been reserved", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("PUT", domainURL(domain.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": "www",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("name"))
+			Expect(err.Code).To(Equal(errors.DomainReserved))
+			Expect(err.Message).To(Equal("Domain name has been reserved"))
+		})
+
+		s.It("Domain does not exist", func() {
+			var err errors.API
+			r := s.Request("GET", domainURL(9999999999), nil)
+
+			Expect(r.Code).To(Equal(http.StatusNotFound))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.DomainNotExist))
+			Expect(err.Message).To(Equal("Domain does not exist"))
+		})
+
+		s.After(func() {
+			s.deleteUser1()
+			s.deleteUser2()
+			s.deleteToken1()
+			s.deleteToken2()
 			s.deleteDomain1()
 		})
 	})
