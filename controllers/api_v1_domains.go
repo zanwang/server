@@ -32,16 +32,7 @@ func (f *domainForm) FieldMap() binding.FieldMap {
 }
 
 func (a *APIv1) DomainCreate(c *gin.Context) {
-	token := c.MustGet("token").(*models.Token)
 	user := c.MustGet("user").(*models.User)
-
-	if token.UserID != user.ID {
-		panic(errors.API{
-			Status:  http.StatusForbidden,
-			Code:    errors.DomainForbidden,
-			Message: "You are forbidden to create domains for this user",
-		})
-	}
 
 	if !user.Activated {
 		panic(errors.API{
@@ -63,7 +54,7 @@ func (a *APIv1) DomainCreate(c *gin.Context) {
 
 	domain := models.Domain{
 		Name:   *form.Name,
-		UserID: token.UserID,
+		UserID: user.ID,
 	}
 
 	if err := models.DB.Insert(&domain); err != nil {

@@ -17,6 +17,7 @@ func (s *TestSuite) APIv1User() {
 		s.APIv1UserCreate()
 		s.APIv1UserShow()
 		s.APIv1UserUpdate()
+		s.APIv1UserDestroy()
 	})
 }
 
@@ -384,7 +385,7 @@ func (s *TestSuite) APIv1UserUpdate() {
 			s.ParseJSON(r.Body, &err)
 
 			Expect(err.Code).To(Equal(errors.UserForbidden))
-			Expect(err.Message).To(Equal("You are forbidden to edit this user"))
+			Expect(err.Message).To(Equal("You are forbidden to access this user"))
 		})
 
 		s.It("Unauthorized (without token)", func() {
@@ -659,6 +660,92 @@ func (s *TestSuite) APIv1UserUpdate() {
 
 			Expect(err.Code).To(Equal(errors.UserNotExist))
 			Expect(err.Message).To(Equal("User does not exist"))
+		})
+
+		s.After(func() {
+			s.deleteUser1()
+			s.deleteUser2()
+			s.deleteToken1()
+			s.deleteToken2()
+		})
+	})
+}
+
+func (s *TestSuite) APIv1UserDestroy() {
+	s.Describe("Destroy", func() {
+		s.Before(func() {
+			s.createUser1()
+			s.createUser2()
+			s.createToken1()
+			s.createToken2()
+		})
+
+		s.It("Unauthorized (with wrong token)", func() {
+			var err errors.API
+			token := s.Get("token2").(*models.Token)
+			user := s.Get("user").(*models.User)
+			r := s.Request("DELETE", "/api/v1/users/"+strconv.FormatInt(user.ID, 10), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusForbidden))
+
+			s.ParseJSON(r.Body, &err)
+
+			Expect(err.Code).To(Equal(errors.UserForbidden))
+			Expect(err.Message).To(Equal("You are forbidden to access this user"))
+		})
+
+		s.It("Unauthorized (without token", func() {
+			var err errors.API
+			user := s.Get("user").(*models.User)
+			r := s.Request("DELETE", "/api/v1/users/"+strconv.FormatInt(user.ID, 10), &requestOptions{
+				Body: map[string]string{},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusUnauthorized))
+
+			s.ParseJSON(r.Body, &err)
+
+			Expect(err.Code).To(Equal(errors.TokenRequired))
+			Expect(err.Message).To(Equal("Token is required"))
+		})
+
+		s.It("User does not exist", func() {
+			var err errors.API
+			token := s.Get("token2").(*models.Token)
+			r := s.Request("DELETE", "/api/v1/users/4465453135463", &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusNotFound))
+
+			s.ParseJSON(r.Body, &err)
+
+			Expect(err.Code).To(Equal(errors.UserNotExist))
+			Expect(err.Message).To(Equal("User does not exist"))
+		})
+
+		s.It("Success", func() {
+			token := s.Get("token").(*models.Token)
+			user := s.Get("user").(*models.User)
+			r := s.Request("DELETE", "/api/v1/users/"+strconv.FormatInt(user.ID, 10), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusNoContent))
+
+			// Check whether user still exists
+			if count, _ := models.DB.SelectInt("SELECT * FROM users WHERE id=?", user.ID); count > 0 {
+				s.Fail("User still exists")
+			}
 		})
 
 		s.After(func() {

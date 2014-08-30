@@ -66,6 +66,21 @@ func (m *Middleware) GetUser(c *gin.Context) {
 	c.Set("user", &user)
 }
 
+func (m *Middleware) CheckPermissionOfUser(c *gin.Context) {
+	m.GetUser(c)
+
+	token := c.MustGet("token").(*models.Token)
+	user := c.MustGet("user").(*models.User)
+
+	if token.UserID != user.ID {
+		panic(errors.API{
+			Status:  http.StatusForbidden,
+			Code:    errors.UserForbidden,
+			Message: "You are forbidden to access this user",
+		})
+	}
+}
+
 func (m *Middleware) GetDomain(c *gin.Context) {
 	var domain models.Domain
 	domainID := c.Params.ByName("domain_id")

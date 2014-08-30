@@ -88,18 +88,8 @@ func (a *APIv1) UserShow(c *gin.Context) {
 }
 
 func (a *APIv1) UserUpdate(c *gin.Context) {
-	user := c.MustGet("user").(*models.User)
-	token := c.MustGet("token").(*models.Token)
-
-	if token.UserID != user.ID {
-		panic(errors.API{
-			Status:  http.StatusForbidden,
-			Code:    errors.UserForbidden,
-			Message: "You are forbidden to edit this user",
-		})
-	}
-
 	var form userForm
+	user := c.MustGet("user").(*models.User)
 
 	if err := binding.Bind(c.Request, &form); err != nil {
 		bindingError(err)
