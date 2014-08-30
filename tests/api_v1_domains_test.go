@@ -17,6 +17,7 @@ func (s *TestSuite) APIv1Domain() {
 		s.APIv1DomainShow()
 		s.APIv1DomainUpdate()
 		s.APIv1DomainDestroy()
+		s.APIv1DomainRenew()
 	})
 }
 
@@ -26,6 +27,10 @@ func domainCreateURL(id int64) string {
 
 func domainURL(id int64) string {
 	return "/api/v1/domains/" + strconv.FormatInt(id, 10)
+}
+
+func domainRenewURL(id int64) string {
+	return domainURL(id) + "/renew"
 }
 
 func (s *TestSuite) createDomain(key string, token *models.Token, body map[string]string) {
@@ -714,6 +719,115 @@ func (s *TestSuite) APIv1DomainDestroy() {
 			s.deleteUser2()
 			s.deleteToken1()
 			s.deleteToken2()
+		})
+	})
+}
+
+func (s *TestSuite) APIv1DomainRenew() {
+	s.Describe("Renew", func() {
+		s.Before(func() {
+			s.createUser1()
+			s.createUser2()
+			s.createToken1()
+			s.createToken2()
+			s.createDomain1()
+		})
+
+		s.It("Domain is not renewable", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("POST", domainRenewURL(domain.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusForbidden))
+
+			s.ParseJSON(r.Body, &err)
+
+			Expect(err.Code).To(Equal(errors.DomainNotRenewable))
+			Expect(err.Message).To(Equal("This domain can not be renew until " + domain.ExpiredAt.UTC().Format("2006-01-02")))
+		})
+
+		s.It("Forbidden (with wrong token)", func() {
+			var err errors.API
+			token := s.Get("token2").(*models.Token)
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("POST", domainRenewURL(domain.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusForbidden))
+
+			s.ParseJSON(r.Body, &err)
+
+			Expect(err.Code).To(Equal(errors.DomainForbidden))
+			Expect(err.Message).To(Equal("You are forbidden to access this domain"))
+		})
+
+		s.It("Unauthorized (without token)", func() {
+			var err errors.API
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("POST", domainRenewURL(domain.ID), nil)
+
+			Expect(r.Code).To(Equal(http.StatusUnauthorized))
+
+			s.ParseJSON(r.Body, &err)
+
+			Expect(err.Code).To(Equal(errors.TokenRequired))
+			Expect(err.Message).To(Equal("Token is required"))
+		})
+
+		s.It("Success", func() {
+			domain := s.Get("domain").(*models.Domain)
+			domain.ExpiredAt = time.Now().AddDate(0, 0, 7)
+			models.DB.Update(domain)
+
+			var d map[string]interface{}
+			token := s.Get("token").(*models.Token)
+			r := s.Request("POST", domainRenewURL(domain.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &d)
+			Expect(d["id"]).To(BeEquivalentTo(domain.ID))
+			Expect(d["name"]).To(Equal(domain.Name))
+			Expect(d["user_id"]).To(BeEquivalentTo(domain.UserID))
+			Expect(d).To(HaveKey("created_at"))
+			Expect(d).To(HaveKey("updated_at"))
+			Expect(d["expired_at"]).To(Equal(domain.ExpiredAt.AddDate(1, 0, 0).UTC().Format(time.RFC3339Nano)))
+		})
+
+		s.It("Domain does not exist", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			r := s.Request("POST", domainRenewURL(9999999999), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusNotFound))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.DomainNotExist))
+			Expect(err.Message).To(Equal("Domain does not exist"))
+		})
+
+		s.After(func() {
+			s.deleteUser1()
+			s.deleteUser2()
+			s.deleteToken1()
+			s.deleteToken2()
+			s.deleteDomain1()
 		})
 	})
 }

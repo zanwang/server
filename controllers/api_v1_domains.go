@@ -102,7 +102,10 @@ func (a *APIv1) DomainDestroy(c *gin.Context) {
 
 func (a *APIv1) DomainRenew(c *gin.Context) {
 	domain := c.MustGet("domain").(*models.Domain)
-	domain.Renew()
+
+	if err := domain.Renew(); err != nil {
+		panic(err)
+	}
 
 	if _, err := models.DB.Update(domain); err != nil {
 		panic(err)

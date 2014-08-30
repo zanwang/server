@@ -1,6 +1,7 @@
 package models
 
 import (
+	"net/http"
 	"regexp"
 	"time"
 
@@ -10,7 +11,8 @@ import (
 )
 
 const (
-	domainExpiry = time.Hour * 24 * 365
+	domainExpiry      = time.Hour * 24 * 365
+	domainRenewPeriod = time.Hour * 24 * 30
 )
 
 var (
@@ -94,6 +96,15 @@ func (data *Domain) PreDelete(s gorp.SqlExecutor) error {
 	return nil
 }
 
-func (data *Domain) Renew() {
+func (data *Domain) Renew() error {
+	if time.Now().Add(domainRenewPeriod).Before(data.ExpiredAt) {
+		return errors.API{
+			Status:  http.StatusForbidden,
+			Code:    errors.DomainNotRenewable,
+			Message: "This domain can not be renew until " + data.ExpiredAt.UTC().Format("2006-01-02"),
+		}
+	}
+
 	data.ExpiredAt = data.ExpiredAt.Add(domainExpiry)
+	return nil
 }

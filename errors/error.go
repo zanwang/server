@@ -44,22 +44,23 @@ const (
 	DomainName      = 152
 	Domain          = 153
 	// 2xx: Custom error
-	UserNotActivated = 210
-	UserActivated    = 211
-	EmailUsed        = 212
-	DomainUsed       = 213
-	WrongPassword    = 214
-	PasswordUnset    = 215
-	RecordType       = 216
-	TokenExpired     = 217
-	UserNotExist     = 218
-	TokenRequired    = 219
-	DomainNotExist   = 220
-	DomainForbidden  = 221
-	RecordNotExist   = 222
-	RecordForbidden  = 223
-	DomainReserved   = 224
-	UserForbidden    = 225
+	UserNotActivated   = 210
+	UserActivated      = 211
+	EmailUsed          = 212
+	DomainUsed         = 213
+	WrongPassword      = 214
+	PasswordUnset      = 215
+	RecordType         = 216
+	TokenExpired       = 217
+	UserNotExist       = 218
+	TokenRequired      = 219
+	DomainNotExist     = 220
+	DomainForbidden    = 221
+	RecordNotExist     = 222
+	RecordForbidden    = 223
+	DomainReserved     = 224
+	UserForbidden      = 225
+	DomainNotRenewable = 226
 	// Same as http status code
 	ServerError = 500
 )
