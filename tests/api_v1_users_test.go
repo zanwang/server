@@ -1,4 +1,4 @@
-package server
+package tests
 
 import (
 	"crypto/md5"
@@ -70,6 +70,18 @@ func (s *TestSuite) createUser2() {
 
 func (s *TestSuite) deleteUser2() {
 	s.deleteUser("user2")
+}
+
+func (s *TestSuite) setUserActivated(key string, activated bool) {
+	user := s.Get(key).(*models.User)
+
+	if user.Activated == activated {
+		return
+	} else {
+		user.Activated = activated
+	}
+
+	models.DB.Update(user)
 }
 
 func (s *TestSuite) APIv1UserCreate() {
@@ -367,7 +379,7 @@ func (s *TestSuite) APIv1UserUpdate() {
 			user.Name = u["name"].(string)
 		})
 
-		s.It("Unauthorized (with wrong token)", func() {
+		s.It("Forbidden (with wrong token)", func() {
 			var err errors.API
 			token := s.Get("token2").(*models.Token)
 			user := s.Get("user").(*models.User)
@@ -680,7 +692,7 @@ func (s *TestSuite) APIv1UserDestroy() {
 			s.createToken2()
 		})
 
-		s.It("Unauthorized (with wrong token)", func() {
+		s.It("Forbidden (with wrong token)", func() {
 			var err errors.API
 			token := s.Get("token2").(*models.Token)
 			user := s.Get("user").(*models.User)
@@ -742,8 +754,18 @@ func (s *TestSuite) APIv1UserDestroy() {
 			Expect(r.Code).To(Equal(http.StatusNoContent))
 
 			// Check whether user still exists
-			if count, _ := models.DB.SelectInt("SELECT * FROM users WHERE id=?", user.ID); count > 0 {
+			if count, _ := models.DB.SelectInt("SELECT count(*) FROM users WHERE id=?", user.ID); count > 0 {
 				s.Fail("User still exists")
+			}
+
+			// Check whether all tokens of this user are deleted
+			if count, _ := models.DB.SelectInt("SELECT count(*) FROM tokens WHERE user_id=?", user.ID); count > 0 {
+				s.Fail("Token are not deleted")
+			}
+
+			// Check whether all domains of this user are deleted
+			if count, _ := models.DB.SelectInt("SELECT count(*) FROM domains WHERE user_id=?", user.ID); count > 0 {
+				s.Fail("Domains are not deleted")
 			}
 		})
 

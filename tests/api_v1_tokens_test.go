@@ -1,4 +1,4 @@
-package server
+package tests
 
 import (
 	"net/http"
@@ -286,7 +286,7 @@ func (s *TestSuite) APIv1TokenDestroy() {
 			Expect(r.Code).To(Equal(http.StatusNoContent))
 
 			// Check whether token still exists
-			if count, _ := models.DB.SelectInt("SELECT * FROM tokens WHERE key=?", token.Key); count > 0 {
+			if count, _ := models.DB.SelectInt("SELECT count(*) FROM tokens WHERE key=?", token.Key); count > 0 {
 				s.Fail("Token still exists")
 			}
 		})

@@ -5,3 +5,7 @@ users:
   - name: Mary
     email: mary@abc.com
     password: 234567
+
+domains:
+  - name: abc
+  - name: def

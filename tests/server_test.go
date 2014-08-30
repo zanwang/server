@@ -1,4 +1,4 @@
-package server
+package tests
 
 import (
 	"bytes"
@@ -25,6 +25,10 @@ type fixture struct {
 		Email    string `yaml:"email"`
 		Password string `yaml:"password"`
 	} `yaml:"users"`
+
+	Domains []struct {
+		Name string `yaml:"name"`
+	} `yaml:"domains"`
 }
 
 var Fixture fixture

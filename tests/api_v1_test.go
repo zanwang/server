@@ -1,4 +1,4 @@
-package server
+package tests
 
 import (
 	"net/http"
@@ -11,6 +11,7 @@ func (s *TestSuite) APIv1() {
 		s.APIv1Entry()
 		s.APIv1User()
 		s.APIv1Token()
+		s.APIv1Domain()
 	})
 }
 
