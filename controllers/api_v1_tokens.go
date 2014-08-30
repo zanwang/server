@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
 	"github.com/mholt/binding"
 	"github.com/tommy351/maji.moe/errors"
@@ -26,7 +27,7 @@ func responseToken(c *gin.Context, token *models.Token) {
 	c.Writer.Header().Set("Pragma", "no-cache")
 	c.Writer.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	c.Writer.Header().Set("Expires", "0")
-	util.Render.JSON(c.Writer, http.StatusOK, token)
+	util.Render.JSON(c.Writer, http.StatusCreated, token)
 }
 
 func (a *APIv1) TokenCreate(c *gin.Context) {
@@ -45,7 +46,11 @@ func (a *APIv1) TokenCreate(c *gin.Context) {
 		panic(errors.New("password", errors.Required, "Password is required"))
 	}
 
-	if err := models.DB.SelectOne(&user, "SELECT id, password FROM users WHERE email=?", form.Email); err != nil {
+	if !govalidator.IsEmail(*form.Email) {
+		panic(errors.New("email", errors.Email, "Email is invalid"))
+	}
+
+	if err := models.DB.SelectOne(&user, "SELECT id, password FROM users WHERE email=?", *form.Email); err != nil {
 		panic(errors.API{
 			Status:  http.StatusBadRequest,
 			Field:   "email",

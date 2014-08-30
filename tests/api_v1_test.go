@@ -20,13 +20,13 @@ func (s *TestSuite) APIv1Entry() {
 		r := s.Request("GET", "/api/v1", nil)
 
 		s.ParseJSON(r.Body, &data)
-		Expect(r.Code, http.StatusOK)
-		Expect(data, map[string]interface{}{
+		Expect(r.Code).To(Equal(http.StatusOK))
+		Expect(data).To(Equal(map[string]interface{}{
 			"tokens":  "/api/v1/tokens",
 			"users":   "/api/v1/users",
 			"domains": "/api/v1/domains",
 			"records": "/api/v1/records",
 			"emails":  "/api/v1/emails",
-		})
+		}))
 	})
 }

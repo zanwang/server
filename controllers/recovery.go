@@ -21,6 +21,7 @@ func Recovery(c *gin.Context) {
 		if err := recover(); err != nil {
 			showStack(err)
 			util.Render.HTML(c.Writer, http.StatusInternalServerError, "error/500", nil)
+			c.Abort(0)
 		}
 	}()
 

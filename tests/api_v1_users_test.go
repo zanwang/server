@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io"
 	"net/http"
+	"strconv"
 
 	. "github.com/onsi/gomega"
 	"github.com/tommy351/maji.moe/errors"
@@ -14,6 +15,7 @@ import (
 func (s *TestSuite) APIv1User() {
 	s.Describe("User", func() {
 		s.APIv1UserCreate()
+		s.APIv1UserShow()
 	})
 }
 
@@ -22,14 +24,14 @@ func (s *TestSuite) createUser(key string, body map[string]string) {
 	r := s.Request("POST", "/api/v1/users", &requestOptions{Body: body})
 	h := md5.New()
 
-	Expect(r.Code, http.StatusCreated)
+	Expect(r.Code).To(Equal(http.StatusCreated))
 
 	s.ParseJSON(r.Body, &user)
-	Expect(user.Name, body["name"])
-	Expect(user.Email, body["email"])
+	Expect(user.Name).To(Equal(body["name"]))
+	Expect(user.Email).To(Equal(body["email"]))
 
 	io.WriteString(h, body["email"])
-	Expect(user.Avatar, "//www.gravatar.com/avatar/"+hex.EncodeToString(h.Sum(nil)))
+	Expect(user.Avatar).To(Equal("//www.gravatar.com/avatar/" + hex.EncodeToString(h.Sum(nil))))
 
 	s.Set(key, &user)
 }
@@ -51,6 +53,18 @@ func (s *TestSuite) deleteUser1() {
 	s.deleteUser("user")
 }
 
+func (s *TestSuite) createUser2() {
+	s.createUser("user2", map[string]string{
+		"name":     Fixture.Users[1].Name,
+		"password": Fixture.Users[1].Password,
+		"email":    Fixture.Users[1].Email,
+	})
+}
+
+func (s *TestSuite) deleteUser2() {
+	s.deleteUser("user2")
+}
+
 func (s *TestSuite) APIv1UserCreate() {
 	s.Describe("Create", func() {
 		s.It("Success", func() {
@@ -59,13 +73,14 @@ func (s *TestSuite) APIv1UserCreate() {
 
 		s.It("Name required", func() {
 			var err errors.API
-			r := s.Request("POST", "/api/v1/users", nil)
+			r := s.Request("POST", "/api/v1/users", &requestOptions{Body: map[string]string{}})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
 
 			s.ParseJSON(r.Body, &err)
-			Expect(r.Code, http.StatusBadRequest)
-			Expect(err.Field, "name")
-			Expect(err.Code, errors.Required)
-			Expect(err.Message, "Name is required")
+			Expect(err.Field).To(Equal("name"))
+			Expect(err.Code).To(Equal(errors.Required))
+			Expect(err.Message).To(Equal("Name is required"))
 		})
 
 		s.It("Password required", func() {
@@ -74,11 +89,12 @@ func (s *TestSuite) APIv1UserCreate() {
 				"name": "John Doe",
 			}})
 
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
 			s.ParseJSON(r.Body, &err)
-			Expect(r.Code, http.StatusBadRequest)
-			Expect(err.Field, "password")
-			Expect(err.Code, errors.Required)
-			Expect(err.Message, "Password is required")
+			Expect(err.Field).To(Equal("password"))
+			Expect(err.Code).To(Equal(errors.Required))
+			Expect(err.Message).To(Equal("Password is required"))
 		})
 
 		s.It("Email required", func() {
@@ -88,11 +104,12 @@ func (s *TestSuite) APIv1UserCreate() {
 				"password": "123456",
 			}})
 
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
 			s.ParseJSON(r.Body, &err)
-			Expect(r.Code, http.StatusBadRequest)
-			Expect(err.Field, "email")
-			Expect(err.Code, errors.Required)
-			Expect(err.Message, "Email is required")
+			Expect(err.Field).To(Equal("email"))
+			Expect(err.Code).To(Equal(errors.Required))
+			Expect(err.Message).To(Equal("Email is required"))
 		})
 
 		s.It("Password length", func() {
@@ -103,11 +120,12 @@ func (s *TestSuite) APIv1UserCreate() {
 				"email":    "abc@def.com",
 			}})
 
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
 			s.ParseJSON(r.Body, &err)
-			Expect(r.Code, http.StatusBadRequest)
-			Expect(err.Field, "password")
-			Expect(err.Code, errors.Length)
-			Expect(err.Message, "The length of password must be between 6-50")
+			Expect(err.Field).To(Equal("password"))
+			Expect(err.Code).To(Equal(errors.Length))
+			Expect(err.Message).To(Equal("The length of password must be between 6-50"))
 		})
 
 		s.It("Email format", func() {
@@ -118,15 +136,107 @@ func (s *TestSuite) APIv1UserCreate() {
 				"email":    "abc",
 			}})
 
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
 			s.ParseJSON(r.Body, &err)
-			Expect(r.Code, http.StatusBadRequest)
-			Expect(err.Field, "email")
-			Expect(err.Code, errors.Email)
-			Expect(err.Message, "Email is invalid")
+			Expect(err.Field).To(Equal("email"))
+			Expect(err.Code).To(Equal(errors.Email))
+			Expect(err.Message).To(Equal("Email is invalid"))
 		})
 
 		s.After(func() {
 			s.deleteUser1()
+		})
+	})
+}
+
+func (s *TestSuite) APIv1UserShow() {
+	s.Describe("Show", func() {
+		s.Before(func() {
+			s.createUser1()
+			s.createUser2()
+			s.createToken1()
+			s.createToken2()
+		})
+
+		s.It("Success (private)", func() {
+			var u map[string]interface{}
+			token := s.Get("token").(*models.Token)
+			user := s.Get("user").(*models.User)
+			r := s.Request("GET", "/api/v1/users/"+strconv.FormatInt(user.ID, 10), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &u)
+
+			Expect(u["id"]).To(BeEquivalentTo(user.ID))
+			Expect(u["name"]).To(Equal(user.Name))
+			Expect(u["email"]).To(Equal(user.Email))
+			Expect(u["avatar"]).To(Equal(user.Avatar))
+			Expect(u["activated"]).To(Equal(user.Activated))
+			Expect(u).To(HaveKey("created_at"))
+			Expect(u).To(HaveKey("updated_at"))
+
+			Expect(u).NotTo(HaveKey("password"))
+			Expect(u).NotTo(HaveKey("activation_token"))
+			Expect(u).NotTo(HaveKey("password_reset_token"))
+			Expect(u).NotTo(HaveKey("facebook_id"))
+			Expect(u).NotTo(HaveKey("twitter_id"))
+			Expect(u).NotTo(HaveKey("google_id"))
+			Expect(u).NotTo(HaveKey("github_id"))
+		})
+
+		s.It("Success (public)", func() {
+			var u map[string]interface{}
+			token := s.Get("token2").(*models.Token)
+			user := s.Get("user").(*models.User)
+			r := s.Request("GET", "/api/v1/users/"+strconv.FormatInt(user.ID, 10), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &u)
+
+			Expect(u["id"]).To(BeEquivalentTo(user.ID))
+			Expect(u["name"]).To(Equal(user.Name))
+			Expect(u["avatar"]).To(Equal(user.Avatar))
+			Expect(u).To(HaveKey("created_at"))
+			Expect(u).To(HaveKey("updated_at"))
+
+			Expect(u).NotTo(HaveKey("email"))
+			Expect(u).NotTo(HaveKey("activated"))
+			Expect(u).NotTo(HaveKey("password"))
+			Expect(u).NotTo(HaveKey("activation_token"))
+			Expect(u).NotTo(HaveKey("password_reset_token"))
+			Expect(u).NotTo(HaveKey("facebook_id"))
+			Expect(u).NotTo(HaveKey("twitter_id"))
+			Expect(u).NotTo(HaveKey("google_id"))
+			Expect(u).NotTo(HaveKey("github_id"))
+		})
+
+		s.It("User does not exist", func() {
+			var err errors.API
+			r := s.Request("GET", "/api/v1/users/46546879", &requestOptions{Body: map[string]string{}})
+
+			Expect(r.Code).To(Equal(http.StatusNotFound))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.UserNotExist))
+			Expect(err.Message).To(Equal("User does not exist"))
+		})
+
+		s.After(func() {
+			s.deleteUser1()
+			s.deleteUser2()
+			s.deleteToken1()
+			s.deleteToken2()
 		})
 	})
 }

@@ -41,6 +41,8 @@ func (api *APIv1) Recovery(c *gin.Context) {
 					Message: "Server error",
 				})
 			}
+
+			c.Abort(0)
 		}
 	}()
 

@@ -53,11 +53,13 @@ const (
 	RecordType       = 216
 	TokenExpired     = 217
 	UserNotExist     = 218
+	TokenRequired    = 219
+	DomainNotExist   = 220
+	DomainForbidden  = 221
+	RecordNotExist   = 222
+	RecordForbidden  = 223
 	// Same as http status code
-	Unauthorized = 401
-	Forbidden    = 403
-	NotFound     = 404
-	ServerError  = 500
+	ServerError = 500
 )
 
 type API struct {

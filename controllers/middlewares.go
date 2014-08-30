@@ -45,7 +45,7 @@ func (m *Middleware) TokenRequired(c *gin.Context) {
 	if _, err := c.Get("token"); err != nil {
 		panic(errors.API{
 			Status:  http.StatusUnauthorized,
-			Code:    errors.Unauthorized,
+			Code:    errors.TokenRequired,
 			Message: "Token is required",
 		})
 	}
@@ -58,7 +58,7 @@ func (m *Middleware) GetUser(c *gin.Context) {
 	if err := models.DB.SelectOne(&user, "SELECT * FROM users WHERE id=?", userID); err != nil {
 		panic(errors.API{
 			Status:  http.StatusNotFound,
-			Code:    errors.NotFound,
+			Code:    errors.UserNotExist,
 			Message: "User does not exist",
 		})
 	}
@@ -73,7 +73,7 @@ func (m *Middleware) GetDomain(c *gin.Context) {
 	if err := models.DB.SelectOne(&domain, "SELECT * FROM domains WHERE id=?", domainID); err != nil {
 		panic(errors.API{
 			Status:  http.StatusNotFound,
-			Code:    errors.NotFound,
+			Code:    errors.DomainNotExist,
 			Message: "Domain does not exist",
 		})
 	}
@@ -90,7 +90,7 @@ func (m *Middleware) CheckOwnershipOfDomain(c *gin.Context) {
 	if domain.UserID != token.UserID {
 		panic(errors.API{
 			Status:  http.StatusForbidden,
-			Code:    errors.Forbidden,
+			Code:    errors.DomainForbidden,
 			Message: "You are forbidden to access this domain",
 		})
 	}
@@ -104,7 +104,7 @@ func (m *Middleware) GetRecord(c *gin.Context) {
 	if err := models.DB.SelectOne(&record, "SELECT * FROM records WHERE id=?", recordID); err != nil {
 		panic(errors.API{
 			Status:  http.StatusNotFound,
-			Code:    errors.NotFound,
+			Code:    errors.RecordNotExist,
 			Message: "Record does not exist",
 		})
 	}
@@ -112,7 +112,7 @@ func (m *Middleware) GetRecord(c *gin.Context) {
 	if err := models.DB.SelectOne(&domain, "SELECT * FROM domains WHERE id=?", record.DomainID); err != nil {
 		panic(errors.API{
 			Status:  http.StatusNotFound,
-			Code:    errors.NotFound,
+			Code:    errors.DomainNotExist,
 			Message: "Domain does not exist",
 		})
 	}
@@ -130,7 +130,7 @@ func (m *Middleware) CheckOwnershipOfRecord(c *gin.Context) {
 	if token.UserID != domain.UserID {
 		panic(errors.API{
 			Status:  http.StatusForbidden,
-			Code:    errors.Forbidden,
+			Code:    errors.RecordForbidden,
 			Message: "You are forbidden to access this record",
 		})
 	}

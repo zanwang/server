@@ -77,7 +77,7 @@ func (s *TestSuite) Request(method, url string, options *requestOptions) *httpte
 
 	req.Header.Set("Content-Type", "application/json")
 	s.server.ServeHTTP(w, req)
-	Expect(err, BeNil())
+	Expect(err).To(BeNil())
 
 	return w
 }

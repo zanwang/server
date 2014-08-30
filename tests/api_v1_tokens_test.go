@@ -18,11 +18,11 @@ func (s *TestSuite) createToken(key string, user *models.User, body map[string]s
 	var token models.Token
 	r := s.Request("POST", "/api/v1/tokens", &requestOptions{Body: body})
 
-	Expect(r.Code, http.StatusCreated)
+	Expect(r.Code).To(Equal(http.StatusCreated))
 
 	s.ParseJSON(r.Body, &token)
-	Expect(token.Key, HaveLen(32))
-	Expect(token.UserID, user.ID)
+	Expect(token.Key).To(HaveLen(32))
+	Expect(token.UserID).To(Equal(user.ID))
 
 	s.Set(key, &token)
 }
@@ -45,6 +45,19 @@ func (s *TestSuite) deleteToken1() {
 	s.deleteToken("token")
 }
 
+func (s *TestSuite) createToken2() {
+	user := s.Get("user2").(*models.User)
+
+	s.createToken("token2", user, map[string]string{
+		"email":    Fixture.Users[1].Email,
+		"password": Fixture.Users[1].Password,
+	})
+}
+
+func (s *TestSuite) deleteToken2() {
+	s.deleteToken("token2")
+}
+
 func (s *TestSuite) APIv1TokenCreate() {
 	s.Describe("Create", func() {
 		s.Before(func() {
@@ -57,13 +70,14 @@ func (s *TestSuite) APIv1TokenCreate() {
 
 		s.It("Email required", func() {
 			var err errors.API
-			r := s.Request("POST", "/api/v1/tokens", nil)
+			r := s.Request("POST", "/api/v1/tokens", &requestOptions{Body: map[string]string{}})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
 
 			s.ParseJSON(r.Body, &err)
-			Expect(r.Code, http.StatusBadRequest)
-			Expect(err.Field, "email")
-			Expect(err.Code, errors.Required)
-			Expect(err.Message, "Email is required")
+			Expect(err.Field).To(Equal("email"))
+			Expect(err.Code).To(Equal(errors.Required))
+			Expect(err.Message).To(Equal("Email is required"))
 		})
 
 		s.It("Password required", func() {
@@ -72,11 +86,12 @@ func (s *TestSuite) APIv1TokenCreate() {
 				"email": "abc@def.com",
 			}})
 
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
 			s.ParseJSON(r.Body, &err)
-			Expect(r.Code, http.StatusBadRequest)
-			Expect(err.Field, "password")
-			Expect(err.Code, errors.Required)
-			Expect(err.Message, "Password is required")
+			Expect(err.Field).To(Equal("password"))
+			Expect(err.Code).To(Equal(errors.Required))
+			Expect(err.Message).To(Equal("Password is required"))
 		})
 
 		s.It("Email format", func() {
@@ -86,25 +101,42 @@ func (s *TestSuite) APIv1TokenCreate() {
 				"password": "123456",
 			}})
 
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
 			s.ParseJSON(r.Body, &err)
-			Expect(r.Code, http.StatusBadRequest)
-			Expect(err.Field, "email")
-			Expect(err.Code, errors.Email)
-			Expect(err.Message, "Email is invalid")
+			Expect(err.Field).To(Equal("email"))
+			Expect(err.Code).To(Equal(errors.Email))
+			Expect(err.Message).To(Equal("Email is invalid"))
+		})
+
+		s.It("User does not exist", func() {
+			var err errors.API
+			r := s.Request("POST", "/api/v1/tokens", &requestOptions{Body: map[string]string{
+				"email":    "abc@def.com",
+				"password": "123456",
+			}})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("email"))
+			Expect(err.Code).To(Equal(errors.UserNotExist))
+			Expect(err.Message).To(Equal("User does not exist"))
 		})
 
 		s.It("Password length", func() {
 			var err errors.API
 			r := s.Request("POST", "/api/v1/tokens", &requestOptions{Body: map[string]string{
-				"email":    "abc@def.com",
+				"email":    Fixture.Users[0].Email,
 				"password": "123",
 			}})
 
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
 			s.ParseJSON(r.Body, &err)
-			Expect(r.Code, http.StatusBadRequest)
-			Expect(err.Field, "password")
-			Expect(err.Code, errors.Length)
-			Expect(err.Message, "The length of password must be between 6-50")
+			Expect(err.Field).To(Equal("password"))
+			Expect(err.Code).To(Equal(errors.Length))
+			Expect(err.Message).To(Equal("The length of password must be between 6-50"))
 		})
 
 		s.It("Wrong password", func() {
@@ -114,11 +146,12 @@ func (s *TestSuite) APIv1TokenCreate() {
 				"password": "erqojeroqjeor",
 			}})
 
+			Expect(r.Code).To(Equal(http.StatusUnauthorized))
+
 			s.ParseJSON(r.Body, &err)
-			Expect(r.Code, http.StatusUnauthorized)
-			Expect(err.Field, "password")
-			Expect(err.Code, errors.WrongPassword)
-			Expect(err.Message, "Password is wrong")
+			Expect(err.Field).To(Equal("password"))
+			Expect(err.Code).To(Equal(errors.WrongPassword))
+			Expect(err.Message).To(Equal("Password is wrong"))
 		})
 
 		s.It("Password unset", func() {
@@ -135,11 +168,12 @@ func (s *TestSuite) APIv1TokenCreate() {
 				"password": "erqojeroqjeor",
 			}})
 
+			Expect(r.Code).To(Equal(http.StatusUnauthorized))
+
 			s.ParseJSON(r.Body, &err)
-			Expect(r.Code, http.StatusUnauthorized)
-			Expect(err.Field, "password")
-			Expect(err.Code, errors.PasswordUnset)
-			Expect(err.Message, "Password has not been set")
+			Expect(err.Field).To(Equal("password"))
+			Expect(err.Code).To(Equal(errors.PasswordUnset))
+			Expect(err.Message).To(Equal("Password has not been set"))
 		})
 
 		s.After(func() {

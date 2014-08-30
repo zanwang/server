@@ -113,7 +113,12 @@ func (data *User) Authenticate(password string) error {
 	}
 
 	if govalidator.IsNull(data.Password) {
-		return errors.New("password", errors.PasswordUnset, "Password has not been set")
+		return errors.API{
+			Status:  http.StatusUnauthorized,
+			Field:   "password",
+			Code:    errors.PasswordUnset,
+			Message: "Password has not been set",
+		}
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(data.Password), []byte(password)); err != nil {
