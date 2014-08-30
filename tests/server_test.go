@@ -140,6 +140,7 @@ func TestServer(t *testing.T) {
 
 	s.Describe("Server test", func() {
 		s.APIv1()
+		s.Activation()
 
 		s.After(func() {
 			models.DB.DropTables()
