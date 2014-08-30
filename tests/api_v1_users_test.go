@@ -710,7 +710,7 @@ func (s *TestSuite) APIv1UserDestroy() {
 			Expect(err.Message).To(Equal("You are forbidden to access this user"))
 		})
 
-		s.It("Unauthorized (without token", func() {
+		s.It("Unauthorized (without token)", func() {
 			var err errors.API
 			user := s.Get("user").(*models.User)
 			r := s.Request("DELETE", "/api/v1/users/"+strconv.FormatInt(user.ID, 10), &requestOptions{

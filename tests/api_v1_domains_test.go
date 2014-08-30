@@ -16,6 +16,7 @@ func (s *TestSuite) APIv1Domain() {
 		s.APIv1DomainList()
 		s.APIv1DomainShow()
 		s.APIv1DomainUpdate()
+		s.APIv1DomainDestroy()
 	})
 }
 
@@ -621,6 +622,98 @@ func (s *TestSuite) APIv1DomainUpdate() {
 			s.deleteToken1()
 			s.deleteToken2()
 			s.deleteDomain1()
+			s.deleteDomain2()
+		})
+	})
+}
+
+func (s *TestSuite) APIv1DomainDestroy() {
+	s.Describe("Destroy", func() {
+		s.Before(func() {
+			s.createUser1()
+			s.createUser2()
+			s.createToken1()
+			s.createToken2()
+		})
+
+		s.BeforeEach(func() {
+			s.createDomain1()
+		})
+
+		s.It("Forbidden (with wrong token)", func() {
+			var err errors.API
+			token := s.Get("token2").(*models.Token)
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("DELETE", domainURL(domain.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusForbidden))
+
+			s.ParseJSON(r.Body, &err)
+
+			Expect(err.Code).To(Equal(errors.DomainForbidden))
+			Expect(err.Message).To(Equal("You are forbidden to access this domain"))
+		})
+
+		s.It("Unauthorized (without token)", func() {
+			var err errors.API
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("DELETE", domainURL(domain.ID), nil)
+
+			Expect(r.Code).To(Equal(http.StatusUnauthorized))
+
+			s.ParseJSON(r.Body, &err)
+
+			Expect(err.Code).To(Equal(errors.TokenRequired))
+			Expect(err.Message).To(Equal("Token is required"))
+		})
+
+		s.It("Domain does not exist", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			r := s.Request("DELETE", domainURL(9999999999), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusNotFound))
+
+			s.ParseJSON(r.Body, &err)
+
+			Expect(err.Code).To(Equal(errors.DomainNotExist))
+			Expect(err.Message).To(Equal("Domain does not exist"))
+		})
+
+		s.It("Success", func() {
+			token := s.Get("token").(*models.Token)
+			domain := s.Get("domain").(*models.Domain)
+			r := s.Request("DELETE", domainURL(domain.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusNoContent))
+
+			// Check whether all records of this domain are deleted
+			if count, _ := models.DB.SelectInt("SELECT count(*) FROM records WHERE domain_id=?", domain.ID); count > 0 {
+				s.Fail("Records are not deleted")
+			}
+		})
+
+		s.AfterEach(func() {
+			s.deleteDomain1()
+		})
+
+		s.After(func() {
+			s.deleteUser1()
+			s.deleteUser2()
+			s.deleteToken1()
+			s.deleteToken2()
 		})
 	})
 }
