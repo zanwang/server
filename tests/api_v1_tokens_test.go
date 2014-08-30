@@ -30,6 +30,7 @@ func (s *TestSuite) createToken(key string, user *models.User, body map[string]s
 func (s *TestSuite) deleteToken(key string) {
 	token := s.Get(key).(*models.Token)
 	models.DB.Delete(token)
+	s.Del(key)
 }
 
 func (s *TestSuite) createToken1() {
@@ -70,7 +71,9 @@ func (s *TestSuite) APIv1TokenCreate() {
 
 		s.It("Email required", func() {
 			var err errors.API
-			r := s.Request("POST", "/api/v1/tokens", &requestOptions{Body: map[string]string{}})
+			r := s.Request("POST", "/api/v1/tokens", &requestOptions{
+				Body: map[string]string{},
+			})
 
 			Expect(r.Code).To(Equal(http.StatusBadRequest))
 
@@ -82,9 +85,11 @@ func (s *TestSuite) APIv1TokenCreate() {
 
 		s.It("Password required", func() {
 			var err errors.API
-			r := s.Request("POST", "/api/v1/tokens", &requestOptions{Body: map[string]string{
-				"email": "abc@def.com",
-			}})
+			r := s.Request("POST", "/api/v1/tokens", &requestOptions{
+				Body: map[string]string{
+					"email": "abc@def.com",
+				},
+			})
 
 			Expect(r.Code).To(Equal(http.StatusBadRequest))
 
@@ -96,10 +101,12 @@ func (s *TestSuite) APIv1TokenCreate() {
 
 		s.It("Email format", func() {
 			var err errors.API
-			r := s.Request("POST", "/api/v1/tokens", &requestOptions{Body: map[string]string{
-				"email":    "abc",
-				"password": "123456",
-			}})
+			r := s.Request("POST", "/api/v1/tokens", &requestOptions{
+				Body: map[string]string{
+					"email":    "abc",
+					"password": "123456",
+				},
+			})
 
 			Expect(r.Code).To(Equal(http.StatusBadRequest))
 
@@ -111,10 +118,12 @@ func (s *TestSuite) APIv1TokenCreate() {
 
 		s.It("User does not exist", func() {
 			var err errors.API
-			r := s.Request("POST", "/api/v1/tokens", &requestOptions{Body: map[string]string{
-				"email":    "abc@def.com",
-				"password": "123456",
-			}})
+			r := s.Request("POST", "/api/v1/tokens", &requestOptions{
+				Body: map[string]string{
+					"email":    "abc@def.com",
+					"password": "123456",
+				},
+			})
 
 			Expect(r.Code).To(Equal(http.StatusBadRequest))
 
@@ -126,10 +135,12 @@ func (s *TestSuite) APIv1TokenCreate() {
 
 		s.It("Password length", func() {
 			var err errors.API
-			r := s.Request("POST", "/api/v1/tokens", &requestOptions{Body: map[string]string{
-				"email":    Fixture.Users[0].Email,
-				"password": "123",
-			}})
+			r := s.Request("POST", "/api/v1/tokens", &requestOptions{
+				Body: map[string]string{
+					"email":    Fixture.Users[0].Email,
+					"password": "123",
+				},
+			})
 
 			Expect(r.Code).To(Equal(http.StatusBadRequest))
 
@@ -141,10 +152,12 @@ func (s *TestSuite) APIv1TokenCreate() {
 
 		s.It("Wrong password", func() {
 			var err errors.API
-			r := s.Request("POST", "/api/v1/tokens", &requestOptions{Body: map[string]string{
-				"email":    Fixture.Users[0].Email,
-				"password": "erqojeroqjeor",
-			}})
+			r := s.Request("POST", "/api/v1/tokens", &requestOptions{
+				Body: map[string]string{
+					"email":    Fixture.Users[0].Email,
+					"password": "erqojeroqjeor",
+				},
+			})
 
 			Expect(r.Code).To(Equal(http.StatusUnauthorized))
 
@@ -163,10 +176,12 @@ func (s *TestSuite) APIv1TokenCreate() {
 			}
 
 			var err errors.API
-			r := s.Request("POST", "/api/v1/tokens", &requestOptions{Body: map[string]string{
-				"email":    Fixture.Users[0].Email,
-				"password": "erqojeroqjeor",
-			}})
+			r := s.Request("POST", "/api/v1/tokens", &requestOptions{
+				Body: map[string]string{
+					"email":    Fixture.Users[0].Email,
+					"password": "erqojeroqjeor",
+				},
+			})
 
 			Expect(r.Code).To(Equal(http.StatusUnauthorized))
 

@@ -6,13 +6,7 @@ server:
 
 database:
   type: sqlite3
-  path: /tmp/testing.sqlite
-
-reserved_domains:
-  - www
-  - email
-  - api
-  - static
+  path: ":memory:"
 
 mailgun:
   domain:

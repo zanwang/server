@@ -106,6 +106,10 @@ func (s *TestSuite) Set(key string, data interface{}) {
 	s.data[key] = data
 }
 
+func (s *TestSuite) Del(key string) {
+	s.data[key] = nil
+}
+
 func TestServer(t *testing.T) {
 	s := TestSuite{
 		goblin.Goblin(t),

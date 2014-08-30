@@ -13,7 +13,10 @@ const (
 	domainExpiry = time.Hour * 24 * 365
 )
 
-var rDomainName = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z\\d\\-]*$")
+var (
+	rDomainName     = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z\\d\\-]*$")
+	reservedDomains = []string{"www", "api", "email", "static"}
+)
 
 // Domain model
 type Domain struct {
@@ -25,7 +28,7 @@ type Domain struct {
 	UserID    int64     `db:"user_id" json:"user_id"`
 }
 
-func (data *Domain) Validate() error {
+func (data *Domain) Validate(s gorp.SqlExecutor) error {
 	if govalidator.IsNull(data.Name) {
 		return errors.New("name", errors.Required, "Name is required")
 	}
@@ -38,11 +41,30 @@ func (data *Domain) Validate() error {
 		return errors.New("name", errors.DomainName, "Domain name is invalid")
 	}
 
+	inarr := false
+
+	for _, str := range reservedDomains {
+		if data.Name == str {
+			inarr = true
+			break
+		}
+	}
+
+	if inarr {
+		return errors.New("name", errors.DomainReserved, "Domain name has been reserved")
+	}
+
+	if id, err := s.SelectInt("SELECT id FROM domains WHERE name=?", data.Name); err == nil {
+		if data.ID != id {
+			return errors.New("name", errors.DomainUsed, "Domain name has been taken")
+		}
+	}
+
 	return nil
 }
 
 func (data *Domain) PreInsert(s gorp.SqlExecutor) error {
-	if err := data.Validate(); err != nil {
+	if err := data.Validate(s); err != nil {
 		return err
 	}
 
@@ -54,7 +76,7 @@ func (data *Domain) PreInsert(s gorp.SqlExecutor) error {
 }
 
 func (data *Domain) PreUpdate(s gorp.SqlExecutor) error {
-	if err := data.Validate(); err != nil {
+	if err := data.Validate(s); err != nil {
 		return err
 	}
 

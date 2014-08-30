@@ -71,7 +71,8 @@ func (a *APIv1) UserShow(c *gin.Context) {
 	var isOwner bool
 	user := c.MustGet("user").(*models.User)
 
-	if token, ok := c.MustGet("token").(*models.Token); ok {
+	if data, err := c.Get("token"); err == nil {
+		token := data.(*models.Token)
 		isOwner = user.ID == token.UserID
 	}
 

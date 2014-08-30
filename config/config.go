@@ -24,8 +24,6 @@ type config struct {
 		Path string `yaml:"path"`
 	} `yaml:"database"`
 
-	ReservedDomains []string `yaml:"reserved_domains"`
-
 	Mailgun struct {
 		Domain     string `yaml:"domain"`
 		PrivateKey string `yaml:"private_key"`

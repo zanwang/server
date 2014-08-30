@@ -58,6 +58,7 @@ const (
 	DomainForbidden  = 221
 	RecordNotExist   = 222
 	RecordForbidden  = 223
+	DomainReserved   = 224
 	// Same as http status code
 	ServerError = 500
 )

@@ -1,17 +1,24 @@
 package models
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"path"
+	"text/template"
 	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
 	"github.com/asaskevich/govalidator"
 	"github.com/coopernurse/gorp"
 	"github.com/dchest/uniuri"
+	"github.com/tommy351/maji.moe/config"
 	"github.com/tommy351/maji.moe/errors"
+	"github.com/tommy351/maji.moe/util"
 )
 
 type User struct {
@@ -31,7 +38,22 @@ type User struct {
 	GithubID           string    `db:"github_id" json:"-"`
 }
 
-func (data *User) Validate() error {
+const (
+	mailSender    = "maji.moe <noreply@maji.moe>"
+	mailTitle     = "Activate your account"
+	mailRecipient = "%s <%s>"
+)
+
+var mailTmpl *template.Template
+
+func init() {
+	baseDir := config.BaseDir
+	mailTmpl = template.Must(template.ParseFiles(
+		path.Join(baseDir, "views", "email", "activation.html"),
+	))
+}
+
+func (data *User) Validate(s gorp.SqlExecutor) error {
 	if govalidator.IsNull(data.Name) {
 		return errors.New("name", errors.Required, "Name is required")
 	}
@@ -40,19 +62,20 @@ func (data *User) Validate() error {
 		return errors.New("email", errors.Email, "Email is invalid")
 	}
 
+	if id, err := s.SelectInt("SELECT id FROM users WHERE email=?", data.Email); err == nil {
+		if data.ID != id {
+			return errors.New("email", errors.EmailUsed, "Email has been taken")
+		}
+	}
+
 	data.Name = govalidator.Trim(data.Name, "")
 
 	return nil
 }
 
 func (data *User) PreInsert(s gorp.SqlExecutor) error {
-	if err := data.Validate(); err != nil {
+	if err := data.Validate(s); err != nil {
 		return err
-	}
-
-	// Check whether email has been taken
-	if count, _ := s.SelectInt("SELECT count(id) FROM users WHERE email=?", data.Email); count > 0 {
-		return errors.New("email", errors.EmailUsed, "Email has been taken")
 	}
 
 	now := time.Now()
@@ -62,7 +85,7 @@ func (data *User) PreInsert(s gorp.SqlExecutor) error {
 }
 
 func (data *User) PreUpdate(s gorp.SqlExecutor) error {
-	if err := data.Validate(); err != nil {
+	if err := data.Validate(s); err != nil {
 		return err
 	}
 
@@ -143,5 +166,24 @@ func (data *User) SetActivated(activated bool) {
 }
 
 func (data *User) SendActivationMail() {
-	//
+	if data.Activated {
+		return
+	}
+
+	var buf bytes.Buffer
+	err := mailTmpl.Execute(&buf, map[string]interface{}{
+		"User": data,
+	})
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	recipient := fmt.Sprintf(mailRecipient, data.Name, data.Email)
+	msg := util.Mailgun.NewMessage(mailSender, mailTitle, buf.String(), recipient)
+
+	if _, _, err := util.Mailgun.Send(msg); err != nil {
+		log.Println(err)
+	}
 }
