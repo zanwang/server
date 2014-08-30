@@ -33,16 +33,12 @@ func (api *APIv1) Recovery(c *gin.Context) {
 					showStack(err)
 				}
 
-				util.Render.JSON(c.Writer, e.Status, map[string]interface{}{
-					"error": e,
-				})
+				util.Render.JSON(c.Writer, e.Status, e)
 			default:
 				showStack(err)
-				util.Render.JSON(c.Writer, http.StatusInternalServerError, map[string]interface{}{
-					"error": errors.API{
-						Code:    errors.ServerError,
-						Message: "Server error",
-					},
+				util.Render.JSON(c.Writer, http.StatusInternalServerError, errors.API{
+					Code:    errors.ServerError,
+					Message: "Server error",
 				})
 			}
 		}

@@ -108,7 +108,7 @@ func (data *User) GeneratePassword(password string) error {
 }
 
 func (data *User) Authenticate(password string) error {
-	if govalidator.IsByteLength(password, 6, 50) {
+	if !govalidator.IsByteLength(password, 6, 50) {
 		return errors.New("password", errors.Length, "The length of password must be between 6-50")
 	}
 

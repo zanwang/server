@@ -63,7 +63,7 @@ const (
 type API struct {
 	Status  int    `json:"-"`
 	Field   string `json:"field,omitempty"`
-	Code    int    `json:"code"`
+	Code    int    `json:"error"`
 	Message string `json:"message"`
 }
 

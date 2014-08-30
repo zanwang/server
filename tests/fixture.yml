@@ -1,0 +1,7 @@
+users:
+  - name: John
+    email: john@abc.com
+    password: 123456
+  - name: Mary
+    email: mary@abc.com
+    password: 234567

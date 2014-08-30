@@ -17,9 +17,9 @@ func (s *TestSuite) APIv1() {
 func (s *TestSuite) APIv1Entry() {
 	s.It("Entry", func() {
 		var data map[string]interface{}
-		r := s.request("GET", "/api/v1", nil)
+		r := s.Request("GET", "/api/v1", nil)
 
-		s.parseJSON(r.Body, &data)
+		s.ParseJSON(r.Body, &data)
 		Expect(r.Code, http.StatusOK)
 		Expect(data, map[string]interface{}{
 			"tokens":  "/api/v1/tokens",

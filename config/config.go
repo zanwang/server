@@ -3,7 +3,7 @@ package config
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
+	"path"
 	"runtime"
 
 	"github.com/gin-gonic/gin"
@@ -74,12 +74,12 @@ func init() {
 		gin.SetMode(gin.DebugMode)
 	}
 
-	if _, path, _, ok := runtime.Caller(1); ok {
-		BaseDir = filepath.Dir(filepath.Dir(path))
+	if _, p, _, ok := runtime.Caller(1); ok {
+		BaseDir = path.Dir(path.Dir(p))
 	}
 
 	for _, ext := range configExtname {
-		path := filepath.Join(BaseDir, configDir, Env+"."+ext)
+		path := path.Join(BaseDir, configDir, Env+"."+ext)
 
 		if !exists(path) {
 			continue

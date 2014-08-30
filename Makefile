@@ -11,6 +11,10 @@ deps:
 	go get gopkg.in/yaml.v1
 	go get github.com/onsi/gomega
 	go get github.com/franela/goblin
+	go get github.com/mailgun/mailgun-go
+	go get github.com/huandu/facebook
+	go get github.com/mrjones/oauth
+	go get github.com/golang/oauth2
 
 install: deps
 	bower install
@@ -18,4 +22,4 @@ install: deps
 
 test: export GO_ENV=test
 test:
-	go test ./server -v
+	go test ./tests -v
