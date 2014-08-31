@@ -1,7 +1,7 @@
 package server
 
 import (
-	"path/filepath"
+	"path"
 
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
@@ -61,7 +61,7 @@ func Server() *gin.Engine {
 		apiv1Group.DELETE("/records/:record_id", middleware.TokenRequired, middleware.CheckOwnershipOfRecord, apiv1.RecordDestroy)
 	}
 
-	r.Use(static.Serve(filepath.Join(config.BaseDir, "public")))
+	r.Use(static.Serve(path.Join(config.BaseDir, "public")))
 
 	return r
 }

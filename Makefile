@@ -15,6 +15,7 @@ deps:
 	go get github.com/huandu/facebook
 	go get github.com/mrjones/oauth
 	go get github.com/golang/oauth2
+	go get github.com/go-sql-driver/mysql
 
 install: deps
 
