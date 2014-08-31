@@ -7,7 +7,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/coopernurse/gorp"
-	"github.com/tommy351/maji.moe/errors"
+	"github.com/majimoe/server/errors"
 )
 
 const (

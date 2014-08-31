@@ -2,7 +2,7 @@ package util
 
 import (
 	"github.com/huandu/facebook"
-	"github.com/tommy351/maji.moe/config"
+	"github.com/majimoe/server/config"
 )
 
 var Facebook *facebook.App

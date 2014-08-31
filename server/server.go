@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
-	"github.com/tommy351/maji.moe/config"
-	"github.com/tommy351/maji.moe/controllers"
+	"github.com/majimoe/server/config"
+	"github.com/majimoe/server/controllers"
 )
 
 func Server() *gin.Engine {

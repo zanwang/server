@@ -4,8 +4,8 @@ import (
 	"database/sql"
 
 	"github.com/coopernurse/gorp"
+	"github.com/majimoe/server/config"
 	_ "github.com/mattn/go-sqlite3" // import sqlite3
-	"github.com/tommy351/maji.moe/config"
 )
 
 var DB *gorp.DbMap

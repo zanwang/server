@@ -6,7 +6,7 @@ import (
 	"runtime"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tommy351/maji.moe/util"
+	"github.com/majimoe/server/util"
 )
 
 func showStack(err interface{}) {

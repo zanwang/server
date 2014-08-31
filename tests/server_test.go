@@ -12,10 +12,10 @@ import (
 
 	"github.com/franela/goblin"
 	"github.com/gin-gonic/gin"
+	"github.com/majimoe/server/config"
+	"github.com/majimoe/server/models"
+	"github.com/majimoe/server/server"
 	. "github.com/onsi/gomega"
-	"github.com/tommy351/maji.moe/config"
-	"github.com/tommy351/maji.moe/models"
-	"github.com/tommy351/maji.moe/server"
 	"gopkg.in/yaml.v1"
 )
 

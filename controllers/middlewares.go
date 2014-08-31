@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tommy351/maji.moe/errors"
-	"github.com/tommy351/maji.moe/models"
+	"github.com/majimoe/server/errors"
+	"github.com/majimoe/server/models"
 )
 
 type Middleware struct{}

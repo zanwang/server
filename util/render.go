@@ -3,7 +3,7 @@ package util
 import (
 	"path"
 
-	"github.com/tommy351/maji.moe/config"
+	"github.com/majimoe/server/config"
 	"gopkg.in/unrolled/render.v1"
 )
 

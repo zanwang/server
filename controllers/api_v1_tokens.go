@@ -5,10 +5,10 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gin-gonic/gin"
+	"github.com/majimoe/server/errors"
+	"github.com/majimoe/server/models"
+	"github.com/majimoe/server/util"
 	"github.com/mholt/binding"
-	"github.com/tommy351/maji.moe/errors"
-	"github.com/tommy351/maji.moe/models"
-	"github.com/tommy351/maji.moe/util"
 )
 
 type tokenForm struct {

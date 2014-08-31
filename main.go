@@ -3,8 +3,8 @@ package main
 import (
 	"strconv"
 
-	"github.com/tommy351/maji.moe/config"
-	"github.com/tommy351/maji.moe/server"
+	"github.com/majimoe/server/config"
+	"github.com/majimoe/server/server"
 )
 
 func main() {

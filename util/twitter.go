@@ -1,8 +1,8 @@
 package util
 
 import (
+	"github.com/majimoe/server/config"
 	"github.com/mrjones/oauth"
-	"github.com/tommy351/maji.moe/config"
 )
 
 var Twitter *oauth.Consumer

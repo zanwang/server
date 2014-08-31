@@ -6,7 +6,7 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	"github.com/tommy351/maji.moe/models"
+	"github.com/majimoe/server/models"
 )
 
 func (s *TestSuite) Activation() {

@@ -16,9 +16,9 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/coopernurse/gorp"
 	"github.com/dchest/uniuri"
-	"github.com/tommy351/maji.moe/config"
-	"github.com/tommy351/maji.moe/errors"
-	"github.com/tommy351/maji.moe/util"
+	"github.com/majimoe/server/config"
+	"github.com/majimoe/server/errors"
+	"github.com/majimoe/server/util"
 )
 
 type User struct {

@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/majimoe/server/errors"
+	"github.com/majimoe/server/models"
 	. "github.com/onsi/gomega"
-	"github.com/tommy351/maji.moe/errors"
-	"github.com/tommy351/maji.moe/models"
 )
 
 func (s *TestSuite) APIv1Record() {

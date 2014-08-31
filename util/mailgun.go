@@ -2,7 +2,7 @@ package util
 
 import (
 	"github.com/mailgun/mailgun-go"
-	"github.com/tommy351/maji.moe/config"
+	"github.com/majimoe/server/config"
 )
 
 var Mailgun mailgun.Mailgun

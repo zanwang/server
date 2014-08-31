@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/tommy351/maji.moe/models"
-	"github.com/tommy351/maji.moe/util"
+	"github.com/majimoe/server/models"
+	"github.com/majimoe/server/util"
 )
 
 func Home(c *gin.Context) {
