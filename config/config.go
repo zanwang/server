@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"runtime"
 
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v1"
@@ -52,7 +51,7 @@ const (
 
 var (
 	configExtname = []string{"yml", "yaml"}
-	BaseDir       string
+	BaseDir, _    = os.Getwd()
 	Config        config
 	Env           string
 )
@@ -70,10 +69,6 @@ func init() {
 		gin.SetMode(gin.TestMode)
 	default:
 		gin.SetMode(gin.DebugMode)
-	}
-
-	if _, p, _, ok := runtime.Caller(1); ok {
-		BaseDir = path.Dir(path.Dir(p))
 	}
 
 	for _, ext := range configExtname {

@@ -21,4 +21,4 @@ install: deps
 
 test: export GO_ENV=test
 test:
-	go test ./tests -v
+	go test -v
