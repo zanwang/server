@@ -14,11 +14,16 @@ func (s *TestSuite) APIv1Record() {
 	s.Describe("Record", func() {
 		s.APIv1RecordCreate()
 		s.APIv1RecordList()
+		s.APIv1RecordShow()
 	})
 }
 
 func recordCreateURL(id int64) string {
 	return "/api/v1/domains/" + strconv.FormatInt(id, 10) + "/records"
+}
+
+func recordURL(id int64) string {
+	return "/api/v1/records/" + strconv.FormatInt(id, 10)
 }
 
 func (s *TestSuite) createRecord(key string, token *models.Token, domain *models.Domain, body map[string]interface{}) {
@@ -773,6 +778,97 @@ func (s *TestSuite) APIv1RecordList() {
 			s.deleteDomain2()
 			s.deleteRecord1()
 			s.deleteRecord2()
+		})
+	})
+}
+
+func (s *TestSuite) APIv1RecordShow() {
+	s.Describe("Show", func() {
+		s.Before(func() {
+			s.createUser1()
+			s.createUser2()
+			s.createToken1()
+			s.createToken2()
+			s.createDomain1()
+			s.createRecord1()
+		})
+
+		s.It("Success", func() {
+			var re map[string]interface{}
+			record := s.Get("record").(*models.Record)
+			token := s.Get("token").(*models.Token)
+			r := s.Request("GET", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &re)
+			Expect(re["id"]).To(BeEquivalentTo(record.ID))
+			Expect(re["name"]).To(Equal(record.Name))
+			Expect(re["type"]).To(Equal(record.Type))
+			Expect(re["value"]).To(Equal(record.Value))
+			Expect(re["ttl"]).To(BeEquivalentTo(record.TTL))
+			Expect(re["priority"]).To(BeEquivalentTo(record.Priority))
+			Expect(re["domain_id"]).To(BeEquivalentTo(record.DomainID))
+			Expect(re).To(HaveKey("created_at"))
+			Expect(re).To(HaveKey("updated_at"))
+		})
+
+		s.It("Forbidden (with wrong token)", func() {
+			var err errors.API
+			record := s.Get("record").(*models.Record)
+			token := s.Get("token2").(*models.Token)
+			r := s.Request("GET", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusForbidden))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.RecordForbidden))
+			Expect(err.Message).To(Equal("You are forbidden to access this record"))
+		})
+
+		s.It("Unauthorized (without token)", func() {
+			var err errors.API
+			record := s.Get("record").(*models.Record)
+			r := s.Request("GET", recordURL(record.ID), nil)
+
+			Expect(r.Code).To(Equal(http.StatusUnauthorized))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.TokenRequired))
+			Expect(err.Message).To(Equal("Token is required"))
+		})
+
+		s.It("Record does not exist", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			r := s.Request("GET", recordURL(9999999999), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusNotFound))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.RecordNotExist))
+			Expect(err.Message).To(Equal("Record does not exist"))
+		})
+
+		s.After(func() {
+			s.deleteUser1()
+			s.deleteUser2()
+			s.deleteToken1()
+			s.deleteToken2()
+			s.deleteDomain1()
+			s.deleteRecord1()
 		})
 	})
 }
