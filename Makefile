@@ -17,8 +17,6 @@ deps:
 	go get github.com/golang/oauth2
 
 install: deps
-	bower install
-	npm install
 
 test: export GO_ENV=test
 test:
