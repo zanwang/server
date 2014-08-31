@@ -1,9 +1,23 @@
 package models
 
 import (
+	"net/http"
+	"regexp"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/coopernurse/gorp"
+	"github.com/majimoe/server/errors"
+)
+
+const (
+	domainExpiry      = time.Hour * 24 * 365
+	domainRenewPeriod = time.Hour * 24 * 30
+)
+
+var (
+	rDomainName     = regexp.MustCompile("^[a-zA-Z]+[a-zA-Z\\d\\-]*$")
+	reservedDomains = []string{"www", "api", "email", "static", "test"}
 )
 
 // Domain model
@@ -12,17 +26,64 @@ type Domain struct {
 	Name      string    `db:"name" json:"name"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
+	ExpiredAt time.Time `db:"expired_at" json:"expired_at"`
 	UserID    int64     `db:"user_id" json:"user_id"`
 }
 
+func (data *Domain) Validate(s gorp.SqlExecutor) error {
+	if govalidator.IsNull(data.Name) {
+		return errors.New("name", errors.Required, "Name is required")
+	}
+
+	if len(data.Name) > 63 {
+		return errors.New("name", errors.MaxLength, "Maximum length of name is 63")
+	}
+
+	if !rDomainName.MatchString(data.Name) {
+		return errors.New("name", errors.DomainName, "Domain name is invalid")
+	}
+
+	inarr := false
+
+	for _, str := range reservedDomains {
+		if data.Name == str {
+			inarr = true
+			break
+		}
+	}
+
+	if inarr {
+		return errors.New("name", errors.DomainReserved, "Domain name has been reserved")
+	}
+
+	var domain Domain
+
+	if err := s.SelectOne(&domain, "SELECT id FROM domains WHERE name=?", data.Name); err == nil {
+		if data.ID != domain.ID {
+			return errors.New("name", errors.DomainUsed, "Domain name has been taken")
+		}
+	}
+
+	return nil
+}
+
 func (data *Domain) PreInsert(s gorp.SqlExecutor) error {
+	if err := data.Validate(s); err != nil {
+		return err
+	}
+
 	now := time.Now()
 	data.CreatedAt = now
 	data.UpdatedAt = now
+	data.ExpiredAt = now.Add(domainExpiry)
 	return nil
 }
 
 func (data *Domain) PreUpdate(s gorp.SqlExecutor) error {
+	if err := data.Validate(s); err != nil {
+		return err
+	}
+
 	data.UpdatedAt = time.Now()
 	return nil
 }
@@ -32,5 +93,18 @@ func (data *Domain) PreDelete(s gorp.SqlExecutor) error {
 		return err
 	}
 
+	return nil
+}
+
+func (data *Domain) Renew() error {
+	if time.Now().Add(domainRenewPeriod).Before(data.ExpiredAt) {
+		return errors.API{
+			Status:  http.StatusForbidden,
+			Code:    errors.DomainNotRenewable,
+			Message: "This domain can not be renew until " + data.ExpiredAt.UTC().Format("2006-01-02"),
+		}
+	}
+
+	data.ExpiredAt = data.ExpiredAt.Add(domainExpiry)
 	return nil
 }

@@ -3,18 +3,20 @@ package config
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
+	"path"
+	"runtime"
 
-	"github.com/go-martini/martini"
+	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v1"
 )
 
 // Config stores global configuration
-type Config struct {
+type config struct {
 	Server struct {
 		Host   string `yaml:"host"`
 		Port   int    `yaml:"port"`
 		Secret string `yaml:"secret"`
+		Logger bool   `yaml:"logger"`
 	} `yaml:"server"`
 
 	Database struct {
@@ -22,46 +24,77 @@ type Config struct {
 		Path string `yaml:"path"`
 	} `yaml:"database"`
 
-	ReservedDomains []string `yaml:"reserved_domains"`
-
 	Mailgun struct {
 		Domain     string `yaml:"domain"`
 		PrivateKey string `yaml:"private_key"`
 		PublicKey  string `yaml:"public_key"`
 	} `yaml:"mailgun"`
 
+	Facebook struct {
+		AppID     string `yaml:"app_id"`
+		AppSecret string `yaml:"app_secret"`
+	} `yaml:"facebook"`
+
+	Twitter struct {
+		APIKey    string `yaml:"api_key"`
+		APISecret string `yaml:"api_secret"`
+	} `yaml:"twitter"`
+
 	EmailActivation bool `yaml:"email_activation"`
 }
 
-const configDir = "config"
+const (
+	configDir   = "config"
+	Development = "dev"
+	Production  = "prod"
+	Testing     = "test"
+)
 
-var acceptExtnameForConfig = []string{"yml", "yaml"}
-var baseDir, _ = os.Getwd()
+var (
+	configExtname = []string{"yml", "yaml"}
+	BaseDir       string
+	Config        config
+	Env           string
+)
 
 // Load loads configuration file
-func Load() *Config {
-	env := martini.Env
-	obj := Config{}
-
-	for _, ext := range acceptExtnameForConfig {
-		path := filepath.Join(baseDir, configDir, env+"."+ext)
-
-		if exists(path) {
-			data, err := ioutil.ReadFile(path)
-
-			if err != nil {
-				panic(err)
-			}
-
-			if err = yaml.Unmarshal(data, &obj); err != nil {
-				panic(err)
-			}
-
-			break
-		}
+func init() {
+	if Env = os.Getenv("GO_ENV"); Env == "" {
+		Env = Development
 	}
 
-	return &obj
+	switch Env {
+	case Production:
+		gin.SetMode(gin.ReleaseMode)
+	case Testing:
+		gin.SetMode(gin.TestMode)
+	default:
+		gin.SetMode(gin.DebugMode)
+	}
+
+	if _, p, _, ok := runtime.Caller(1); ok {
+		BaseDir = path.Dir(path.Dir(p))
+	}
+
+	for _, ext := range configExtname {
+		path := path.Join(BaseDir, configDir, Env+"."+ext)
+
+		if !exists(path) {
+			continue
+		}
+
+		data, err := ioutil.ReadFile(path)
+
+		if err != nil {
+			panic(err)
+		}
+
+		if err = yaml.Unmarshal(data, &Config); err != nil {
+			panic(err)
+		}
+
+		break
+	}
 }
 
 func exists(path string) bool {

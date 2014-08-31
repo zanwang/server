@@ -1,38 +1,51 @@
 package controllers
 
 import (
-	"log"
 	"net/http"
-	"strings"
 
-	"github.com/martini-contrib/render"
+	"github.com/gin-gonic/gin"
+	"github.com/majimoe/server/models"
+	"github.com/majimoe/server/util"
 )
 
-// App is the entry point
-func App(r render.Render) {
-	r.HTML(http.StatusOK, "app", nil)
+func Home(c *gin.Context) {
+	util.Render.HTML(c.Writer, http.StatusOK, "index", nil)
 }
 
-func Home(r render.Render) {
-	log.Print("index")
-	r.HTML(http.StatusOK, "index", nil)
+func App(c *gin.Context) {
+	util.Render.HTML(c.Writer, http.StatusOK, "app", nil)
 }
 
-func NotFound(r render.Render, req *http.Request) {
-	if strings.HasPrefix(req.URL.Path, "/api") {
-		errors := NewErr([]string{"common"}, "404", "Not found")
-		r.JSON(http.StatusNotFound, FormatErr(errors))
-	} else {
-		r.HTML(http.StatusNotFound, "error/404", nil)
+func NotFound(c *gin.Context) {
+	util.Render.HTML(c.Writer, http.StatusNotFound, "error/404", nil)
+}
+
+func Activation(c *gin.Context) {
+	var user models.User
+	query := c.Request.URL.Query()
+	id := query.Get("id")
+	token := query.Get("token")
+
+	if err := models.DB.SelectOne(&user, "SELECT * FROM users WHERE id=?", id); err != nil {
+		NotFound(c)
+		return
 	}
-}
 
-func APIEntry(r render.Render) {
-	r.JSON(http.StatusOK, map[string]interface{}{
-		"tokens":  "/api/v1/tokens",
-		"users":   "/api/v1/users",
-		"domains": "/api/v1/domains",
-		"records": "/api/v1/records",
-		"emails":  "/api/v1/emails",
-	})
+	if user.Activated {
+		http.Redirect(c.Writer, c.Request, "/app", http.StatusFound)
+		return
+	}
+
+	if user.ActivationToken != token {
+		util.Render.HTML(c.Writer, http.StatusBadRequest, "error/activation", nil)
+		return
+	}
+
+	user.Activated = true
+
+	if _, err := models.DB.Update(&user); err != nil {
+		panic(err)
+	}
+
+	http.Redirect(c.Writer, c.Request, "/app", http.StatusFound)
 }

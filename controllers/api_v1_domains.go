@@ -3,101 +3,113 @@ package controllers
 import (
 	"net/http"
 
-	"github.com/coopernurse/gorp"
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/binding"
-	"github.com/martini-contrib/render"
-	"github.com/tommy351/maji.moe/config"
-	"github.com/tommy351/maji.moe/models"
+	"github.com/gin-gonic/gin"
+	"github.com/majimoe/server/errors"
+	"github.com/majimoe/server/models"
+	"github.com/majimoe/server/util"
+	"github.com/mholt/binding"
 )
 
-func DomainList(params martini.Params, token *models.Token, r render.Render, db *gorp.DbMap, user *models.User) {
+func (a *APIv1) DomainList(c *gin.Context) {
 	var domains []models.Domain
+	user := c.MustGet("user").(*models.User)
 
-	if _, err := db.Select(&domains, "SELECT * FROM domains WHERE user_id=?", user.ID); err != nil {
+	if _, err := models.DB.Select(&domains, "SELECT * FROM domains WHERE user_id=?", user.ID); err != nil {
 		panic(err)
 	}
 
-	r.JSON(http.StatusOK, domains)
+	util.Render.JSON(c.Writer, http.StatusOK, domains)
 }
 
-type DomainCreateForm struct {
-	Name string `form:"name" json:"name"`
+type domainForm struct {
+	Name *string `json:"name"`
 }
 
-func (form *DomainCreateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
-	v := Validation{Errors: &errors}
-
-	v.Validate(&form.Name, "name").Required("").MaxLength(63, "").DomainName("")
-
-	return errors
+func (f *domainForm) FieldMap() binding.FieldMap {
+	return binding.FieldMap{
+		&f.Name: "name",
+	}
 }
 
-func DomainCreate(form DomainCreateForm, db *gorp.DbMap, r render.Render, user *models.User, token *models.Token, conf *config.Config) {
-	for _, x := range conf.ReservedDomains {
-		if form.Name == x {
-			errors := NewErr([]string{"name"}, "212", "Domain name has been taken")
-			r.JSON(http.StatusBadRequest, FormatErr(errors))
-			return
-		}
+func (a *APIv1) DomainCreate(c *gin.Context) {
+	user := c.MustGet("user").(*models.User)
+
+	if !user.Activated {
+		panic(errors.API{
+			Status:  http.StatusForbidden,
+			Code:    errors.UserNotActivated,
+			Message: "User has not been activated",
+		})
 	}
 
-	var domain models.Domain
+	var form domainForm
 
-	if err := db.SelectOne(&domain, "SELECT id FROM domains WHERE name=?", form.Name); err == nil {
-		errors := NewErr([]string{"name"}, "212", "Domain name has been taken")
-		r.JSON(http.StatusBadRequest, FormatErr(errors))
-		return
+	if err := binding.Bind(c.Request, &form); err != nil {
+		bindingError(err)
 	}
 
-	domain = models.Domain{
-		Name:   form.Name,
-		UserID: token.UserID,
+	if form.Name == nil {
+		panic(errors.New("name", errors.Required, "Name is required"))
 	}
 
-	if err := db.Insert(&domain); err != nil {
+	domain := models.Domain{
+		Name:   *form.Name,
+		UserID: user.ID,
+	}
+
+	if err := models.DB.Insert(&domain); err != nil {
 		panic(err)
 	}
 
-	r.JSON(http.StatusCreated, domain)
+	util.Render.JSON(c.Writer, http.StatusCreated, domain)
 }
 
-func DomainShow(r render.Render, domain *models.Domain) {
-	r.JSON(http.StatusOK, domain)
+func (a *APIv1) DomainShow(c *gin.Context) {
+	domain := c.MustGet("domain").(*models.Domain)
+
+	util.Render.JSON(c.Writer, http.StatusOK, domain)
 }
 
-type DomainUpdateForm struct {
-	Name string `form:"name" json:"name"`
-}
+func (a *APIv1) DomainUpdate(c *gin.Context) {
+	var form domainForm
 
-func (form *DomainUpdateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
-	v := Validation{Errors: &errors}
-
-	v.Validate(&form.Name, "name").MaxLength(63, "").DomainName("")
-
-	return errors
-}
-
-func DomainUpdate(form DomainUpdateForm, r render.Render, db *gorp.DbMap, domain *models.Domain) {
-	if form.Name != "" {
-		domain.Name = form.Name
+	if err := binding.Bind(c.Request, &form); err != nil {
+		bindingError(err)
 	}
 
-	if count, err := db.Update(domain); count > 0 {
-		r.JSON(http.StatusOK, domain)
-	} else if err != nil {
+	domain := c.MustGet("domain").(*models.Domain)
+
+	if form.Name != nil {
+		domain.Name = *form.Name
+	}
+
+	if _, err := models.DB.Update(domain); err != nil {
 		panic(err)
-	} else {
-		r.Status(http.StatusNotFound)
 	}
+
+	util.Render.JSON(c.Writer, http.StatusOK, domain)
 }
 
-func DomainDestroy(res http.ResponseWriter, db *gorp.DbMap, domain *models.Domain) {
-	if count, err := db.Delete(domain); count > 0 {
-		res.WriteHeader(http.StatusNoContent)
-	} else if err != nil {
+func (a *APIv1) DomainDestroy(c *gin.Context) {
+	domain := c.MustGet("domain").(*models.Domain)
+
+	if _, err := models.DB.Delete(domain); err != nil {
 		panic(err)
-	} else {
-		res.WriteHeader(http.StatusNotFound)
 	}
+
+	c.Writer.WriteHeader(http.StatusNoContent)
+}
+
+func (a *APIv1) DomainRenew(c *gin.Context) {
+	domain := c.MustGet("domain").(*models.Domain)
+
+	if err := domain.Renew(); err != nil {
+		panic(err)
+	}
+
+	if _, err := models.DB.Update(domain); err != nil {
+		panic(err)
+	}
+
+	util.Render.JSON(c.Writer, http.StatusOK, domain)
 }

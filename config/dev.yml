@@ -1,0 +1,25 @@
+server:
+  host: localhost
+  port: 9000
+  secret: dxxeQUOx5SPQMgdeoi8JTSKj1fRnFA6G
+  logger: true
+
+database:
+  type: sqlite3
+  path: /tmp/development.sqlite
+
+mailgun:
+  domain:
+  private_key:
+  public_key:
+
+facebook:
+  app_id: 822439461120188
+  app_secret: 8e35ade4afc01c46fe0a0bb68a9dd16d
+
+twitter:
+  api_key: NQAHn1j0nVCNq22UdpqzAjdCf
+  api_secret: pF5Re7vxpztRl7rpJfyJYxitIonWcVba7b6gWcELpBBQskM5gc
+
+# For debugging
+email_activation: false

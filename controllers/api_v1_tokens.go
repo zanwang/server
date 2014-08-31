@@ -3,72 +3,91 @@ package controllers
 import (
 	"net/http"
 
-	"code.google.com/p/go.crypto/bcrypt"
-
-	"github.com/coopernurse/gorp"
-	"github.com/dchest/uniuri"
-	"github.com/martini-contrib/binding"
-	"github.com/martini-contrib/render"
-	"github.com/tommy351/maji.moe/models"
+	"github.com/asaskevich/govalidator"
+	"github.com/gin-gonic/gin"
+	"github.com/majimoe/server/errors"
+	"github.com/majimoe/server/models"
+	"github.com/majimoe/server/util"
+	"github.com/mholt/binding"
 )
 
-type TokenCreateForm struct {
-	Email    string `form:"email" json:"email"`
-	Password string `form:"password" json:"password"`
+type tokenForm struct {
+	Email    *string `json:"email"`
+	Password *string `json:"password"`
 }
 
-func (form *TokenCreateForm) Validate(errors binding.Errors, req *http.Request) binding.Errors {
-	v := Validation{Errors: &errors}
-
-	v.Validate(&form.Email, "email").Required("").Email("")
-	v.Validate(&form.Password, "password").Required("").Length(6, 50, "")
-
-	return errors
+func (f *tokenForm) FieldMap() binding.FieldMap {
+	return binding.FieldMap{
+		&f.Email:    "email",
+		&f.Password: "password",
+	}
 }
 
-func TokenCreate(form TokenCreateForm, r render.Render, db *gorp.DbMap) {
+func responseToken(c *gin.Context, status int, token *models.Token) {
+	c.Writer.Header().Set("Pragma", "no-cache")
+	c.Writer.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	c.Writer.Header().Set("Expires", "0")
+	util.Render.JSON(c.Writer, status, token)
+}
+
+func (a *APIv1) TokenCreate(c *gin.Context) {
 	var user models.User
+	var form tokenForm
 
-	if err := db.SelectOne(&user, "SELECT id, password FROM users WHERE email=?", form.Email); err != nil {
-		errors := NewErr([]string{"email"}, "213", "User does not exist")
-		r.JSON(http.StatusBadRequest, FormatErr(errors))
-		return
+	if err := binding.Bind(c.Request, &form); err != nil {
+		bindingError(err)
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.Password)); err != nil {
-		errors := NewErr([]string{"password"}, "214", "Password is wrong")
-		r.JSON(http.StatusUnauthorized, FormatErr(errors))
-		return
+	if form.Email == nil {
+		panic(errors.New("email", errors.Required, "Email is required"))
 	}
 
-	token := models.Token{
-		UserID: user.ID,
-		Key:    uniuri.NewLen(32),
+	if form.Password == nil {
+		panic(errors.New("password", errors.Required, "Password is required"))
 	}
 
-	if err := db.Insert(&token); err != nil {
+	if !govalidator.IsEmail(*form.Email) {
+		panic(errors.New("email", errors.Email, "Email is invalid"))
+	}
+
+	if err := models.DB.SelectOne(&user, "SELECT id, password FROM users WHERE email=?", *form.Email); err != nil {
+		panic(errors.API{
+			Status:  http.StatusBadRequest,
+			Field:   "email",
+			Code:    errors.UserNotExist,
+			Message: "User does not exist",
+		})
+	}
+
+	if err := user.Authenticate(*form.Password); err != nil {
 		panic(err)
 	}
 
-	r.JSON(http.StatusCreated, token)
+	token := models.Token{UserID: user.ID}
+
+	if err := models.DB.Insert(&token); err != nil {
+		panic(err)
+	}
+
+	responseToken(c, http.StatusCreated, &token)
 }
 
-func TokenUpdate(db *gorp.DbMap, r render.Render, token *models.Token) {
-	if count, err := db.Update(token); count > 0 {
-		r.JSON(http.StatusOK, token)
-	} else if err != nil {
+func (a *APIv1) TokenUpdate(c *gin.Context) {
+	token := c.MustGet("token").(*models.Token)
+
+	if _, err := models.DB.Update(token); err != nil {
 		panic(err)
-	} else {
-		r.Status(http.StatusNotFound)
 	}
+
+	responseToken(c, http.StatusOK, token)
 }
 
-func TokenDestroy(db *gorp.DbMap, res http.ResponseWriter, token *models.Token) {
-	if count, err := db.Delete(token); count > 0 {
-		res.WriteHeader(http.StatusNoContent)
-	} else if err != nil {
+func (a *APIv1) TokenDestroy(c *gin.Context) {
+	token := c.MustGet("token").(*models.Token)
+
+	if _, err := models.DB.Delete(token); err != nil {
 		panic(err)
-	} else {
-		res.WriteHeader(http.StatusNotFound)
 	}
+
+	c.Writer.WriteHeader(http.StatusNoContent)
 }
