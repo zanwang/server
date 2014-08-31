@@ -15,6 +15,7 @@ func (s *TestSuite) APIv1Record() {
 		s.APIv1RecordCreate()
 		s.APIv1RecordList()
 		s.APIv1RecordShow()
+		s.APIv1RecordUpdate()
 	})
 }
 
@@ -381,7 +382,7 @@ func (s *TestSuite) APIv1RecordCreate() {
 				},
 				Body: map[string]interface{}{
 					"type":  "A",
-					"value": "127.0.0.1",
+					"value": "8.8.8.8",
 				},
 			})
 
@@ -390,7 +391,7 @@ func (s *TestSuite) APIv1RecordCreate() {
 			s.ParseJSON(r.Body, &record)
 			Expect(record.Name).To(Equal(""))
 			Expect(record.Type).To(Equal("A"))
-			Expect(record.Value).To(Equal("127.0.0.1"))
+			Expect(record.Value).To(Equal("8.8.8.8"))
 			Expect(record.TTL).To(BeEquivalentTo(0))
 			Expect(record.Priority).To(BeEquivalentTo(0))
 			Expect(record.DomainID).To(Equal(domain.ID))
@@ -852,6 +853,552 @@ func (s *TestSuite) APIv1RecordShow() {
 			r := s.Request("GET", recordURL(9999999999), &requestOptions{
 				Headers: map[string]string{
 					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusNotFound))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.RecordNotExist))
+			Expect(err.Message).To(Equal("Record does not exist"))
+		})
+
+		s.After(func() {
+			s.deleteUser1()
+			s.deleteUser2()
+			s.deleteToken1()
+			s.deleteToken2()
+			s.deleteDomain1()
+			s.deleteRecord1()
+		})
+	})
+}
+
+func (s *TestSuite) APIv1RecordUpdate() {
+	s.Describe("Update", func() {
+		s.Before(func() {
+			s.createUser1()
+			s.createUser2()
+			s.createToken1()
+			s.createToken2()
+			s.createDomain1()
+			s.createRecord1()
+		})
+
+		s.It("Success", func() {
+			var re map[string]interface{}
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": "abc",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &re)
+			Expect(re["id"]).To(BeEquivalentTo(record.ID))
+			Expect(re["name"]).To(Equal("abc"))
+			Expect(re["type"]).To(Equal(record.Type))
+			Expect(re["value"]).To(Equal(record.Value))
+			Expect(re["ttl"]).To(BeEquivalentTo(record.TTL))
+			Expect(re["priority"]).To(BeEquivalentTo(record.Priority))
+			Expect(re["domain_id"]).To(BeEquivalentTo(record.DomainID))
+
+			record.Name = re["name"].(string)
+		})
+
+		s.It("Name started with number", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": "1a2b",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("name"))
+			Expect(err.Code).To(Equal(errors.DomainName))
+			Expect(err.Message).To(Equal("Domain name is invalid"))
+		})
+
+		s.It("Name with special characters", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": "中文",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("name"))
+			Expect(err.Code).To(Equal(errors.DomainName))
+			Expect(err.Message).To(Equal("Domain name is invalid"))
+		})
+
+		s.It("Name too long", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": "erfwoerjweijrliejrwejrliwejrwjerliwwjeroiljweloirjweolirireorweorjweorwoerjwoerwoeirlsj",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("name"))
+			Expect(err.Code).To(Equal(errors.MaxLength))
+			Expect(err.Message).To(Equal("Maximum length of name is 63"))
+		})
+
+		s.It("Wrong type", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"type": "WTF",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("type"))
+			Expect(err.Code).To(Equal(errors.RecordType))
+			Expect(err.Message).To(Equal("Type must be one of " + strings.Join(models.RecordType, ", ")))
+		})
+
+		s.It("Transform type to uppercase", func() {
+			var re map[string]interface{}
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"type": "txt",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &re)
+			Expect(re["type"]).To(Equal("TXT"))
+
+			record.Type = "TXT"
+		})
+
+		s.It("TTL too small", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]interface{}{
+					"ttl": 10,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("ttl"))
+			Expect(err.Code).To(Equal(errors.Range))
+			Expect(err.Message).To(Equal("TTL must be between 300-86400 seconds"))
+		})
+
+		s.It("TTL too large", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]interface{}{
+					"ttl": 100000,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("ttl"))
+			Expect(err.Code).To(Equal(errors.Range))
+			Expect(err.Message).To(Equal("TTL must be between 300-86400 seconds"))
+		})
+
+		s.It("Negative TTL", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]interface{}{
+					"ttl": -10,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("ttl"))
+			Expect(err.Code).To(Equal(errors.Min))
+			Expect(err.Message).To(Equal("Minimum value of TTL is 0"))
+		})
+
+		s.It("Negative priority", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]interface{}{
+					"priority": -10,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("priority"))
+			Expect(err.Code).To(Equal(errors.Min))
+			Expect(err.Message).To(Equal("Minimum value of priority is 0"))
+		})
+
+		s.It("Priority too large", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]interface{}{
+					"priority": 100000,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("priority"))
+			Expect(err.Code).To(Equal(errors.Max))
+			Expect(err.Message).To(Equal("Maximum value of priority is 65535"))
+		})
+
+		s.It("A test - success", func() {
+			var re map[string]interface{}
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"type":  "A",
+					"value": "8.8.8.8",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &re)
+			Expect(re["type"]).To(Equal("A"))
+			Expect(re["value"]).To(Equal("8.8.8.8"))
+
+			record.Type = re["type"].(string)
+			record.Value = re["value"].(string)
+		})
+
+		s.It("A test - fail", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]interface{}{
+					"type":  "A",
+					"value": "wtwerowjeroiw",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("value"))
+			Expect(err.Code).To(Equal(errors.IPv4))
+			Expect(err.Message).To(Equal("Value is not a valid IPv4"))
+		})
+
+		s.It("AAAA test - success", func() {
+			var re map[string]interface{}
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"type":  "AAAA",
+					"value": "2404:6800:4008:c04::8a",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &re)
+			Expect(re["type"]).To(Equal("AAAA"))
+			Expect(re["value"]).To(Equal("2404:6800:4008:c04::8a"))
+
+			record.Type = re["type"].(string)
+			record.Value = re["value"].(string)
+		})
+
+		s.It("AAAA test - fail", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]interface{}{
+					"type":  "AAAA",
+					"value": "wtwerowjeroiw",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("value"))
+			Expect(err.Code).To(Equal(errors.IPv6))
+			Expect(err.Message).To(Equal("Value is not a valid IPv6"))
+		})
+
+		s.It("CNAME test - success", func() {
+			var re map[string]interface{}
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"type":  "CNAME",
+					"value": "github.com",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &re)
+			Expect(re["type"]).To(Equal("CNAME"))
+			Expect(re["value"]).To(Equal("github.com"))
+
+			record.Type = re["type"].(string)
+			record.Value = re["value"].(string)
+		})
+
+		s.It("CNAME test - fail", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]interface{}{
+					"type":  "CNAME",
+					"value": "wtwerowjeroiw",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("value"))
+			Expect(err.Code).To(Equal(errors.Domain))
+			Expect(err.Message).To(Equal("Value is not a valid domain"))
+		})
+
+		s.It("MX test - success", func() {
+			var re map[string]interface{}
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]interface{}{
+					"type":     "MX",
+					"value":    "mail.google.com",
+					"priority": 10,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &re)
+			Expect(re["type"]).To(Equal("MX"))
+			Expect(re["value"]).To(Equal("mail.google.com"))
+
+			record.Type = re["type"].(string)
+			record.Value = re["value"].(string)
+			record.Priority = int(re["priority"].(float64))
+		})
+
+		s.It("MX test - fail", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"type":  "MX",
+					"value": "wtwerowjeroiw",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("value"))
+			Expect(err.Code).To(Equal(errors.Domain))
+			Expect(err.Message).To(Equal("Value is not a valid domain"))
+		})
+
+		s.It("NS test - success", func() {
+			var re map[string]interface{}
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"type":  "NS",
+					"value": "pam.ns.cloudflare.com",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusOK))
+
+			s.ParseJSON(r.Body, &re)
+			Expect(re["type"]).To(Equal("NS"))
+			Expect(re["value"]).To(Equal("pam.ns.cloudflare.com"))
+
+			record.Type = re["type"].(string)
+			record.Value = re["value"].(string)
+		})
+
+		s.It("NS test - fail", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"type":  "NS",
+					"value": "wtwerowjeroiw",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusBadRequest))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Field).To(Equal("value"))
+			Expect(err.Code).To(Equal(errors.Domain))
+			Expect(err.Message).To(Equal("Value is not a valid domain"))
+		})
+
+		s.It("Forbidden (with wrong token)", func() {
+			var err errors.API
+			token := s.Get("token2").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": "abc",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusForbidden))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.RecordForbidden))
+			Expect(err.Message).To(Equal("You are forbidden to access this record"))
+		})
+
+		s.It("Unauthorized (without token)", func() {
+			var err errors.API
+			record := s.Get("record").(*models.Record)
+			r := s.Request("PUT", recordURL(record.ID), &requestOptions{
+				Body: map[string]string{
+					"name": "abc",
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusUnauthorized))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.TokenRequired))
+			Expect(err.Message).To(Equal("Token is required"))
+		})
+
+		s.It("Record does not exist", func() {
+			var err errors.API
+			token := s.Get("token2").(*models.Token)
+			r := s.Request("PUT", recordURL(999999999), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+				Body: map[string]string{
+					"name": "abc",
 				},
 			})
 
