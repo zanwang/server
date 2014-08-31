@@ -16,6 +16,7 @@ func (s *TestSuite) APIv1Record() {
 		s.APIv1RecordList()
 		s.APIv1RecordShow()
 		s.APIv1RecordUpdate()
+		s.APIv1RecordDestroy()
 	})
 }
 
@@ -1392,7 +1393,7 @@ func (s *TestSuite) APIv1RecordUpdate() {
 
 		s.It("Record does not exist", func() {
 			var err errors.API
-			token := s.Get("token2").(*models.Token)
+			token := s.Get("token").(*models.Token)
 			r := s.Request("PUT", recordURL(999999999), &requestOptions{
 				Headers: map[string]string{
 					"Authorization": "token " + token.Key,
@@ -1416,6 +1417,97 @@ func (s *TestSuite) APIv1RecordUpdate() {
 			s.deleteToken2()
 			s.deleteDomain1()
 			s.deleteRecord1()
+		})
+	})
+}
+
+func (s *TestSuite) APIv1RecordDestroy() {
+	s.Describe("Destroy", func() {
+		s.Before(func() {
+			s.createUser1()
+			s.createUser2()
+			s.createToken1()
+			s.createToken2()
+			s.createDomain1()
+		})
+
+		s.BeforeEach(func() {
+			s.createRecord1()
+		})
+
+		s.It("Forbidden (with wrong token)", func() {
+			var err errors.API
+			token := s.Get("token2").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("DELETE", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusForbidden))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.RecordForbidden))
+			Expect(err.Message).To(Equal("You are forbidden to access this record"))
+		})
+
+		s.It("Unauthorized (without token)", func() {
+			var err errors.API
+			record := s.Get("record").(*models.Record)
+			r := s.Request("DELETE", recordURL(record.ID), nil)
+
+			Expect(r.Code).To(Equal(http.StatusUnauthorized))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.TokenRequired))
+			Expect(err.Message).To(Equal("Token is required"))
+		})
+
+		s.It("Domain does not exist", func() {
+			var err errors.API
+			token := s.Get("token").(*models.Token)
+			r := s.Request("PUT", recordURL(999999999), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusNotFound))
+
+			s.ParseJSON(r.Body, &err)
+			Expect(err.Code).To(Equal(errors.RecordNotExist))
+			Expect(err.Message).To(Equal("Record does not exist"))
+		})
+
+		s.It("Success", func() {
+			token := s.Get("token").(*models.Token)
+			record := s.Get("record").(*models.Record)
+			r := s.Request("DELETE", recordURL(record.ID), &requestOptions{
+				Headers: map[string]string{
+					"Authorization": "token " + token.Key,
+				},
+			})
+
+			Expect(r.Code).To(Equal(http.StatusNoContent))
+
+			// Check whether record still exists
+			if count, _ := models.DB.SelectInt("SELECT count(*) FROM records WHERE id=?", record.ID); count > 0 {
+				s.Fail("Record still exists")
+			}
+		})
+
+		s.AfterEach(func() {
+			s.deleteRecord1()
+		})
+
+		s.After(func() {
+			s.deleteUser1()
+			s.deleteUser2()
+			s.deleteToken1()
+			s.deleteToken2()
+			s.deleteDomain1()
+
 		})
 	})
 }

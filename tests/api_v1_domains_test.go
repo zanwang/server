@@ -707,6 +707,11 @@ func (s *TestSuite) APIv1DomainDestroy() {
 
 			Expect(r.Code).To(Equal(http.StatusNoContent))
 
+			// Check whether domain still exists
+			if count, _ := models.DB.SelectInt("SELECT count(*) FROM domains WHERE id=?", domain.ID); count > 0 {
+				s.Fail("Domain still exists")
+			}
+
 			// Check whether all records of this domain are deleted
 			if count, _ := models.DB.SelectInt("SELECT count(*) FROM records WHERE domain_id=?", domain.ID); count > 0 {
 				s.Fail("Records are not deleted")
