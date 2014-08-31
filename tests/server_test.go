@@ -29,6 +29,14 @@ type fixture struct {
 	Domains []struct {
 		Name string `yaml:"name"`
 	} `yaml:"domains"`
+
+	Records []struct {
+		Name     string `yaml:"name"`
+		Type     string `yaml:"type"`
+		Value    string `yaml:"value"`
+		TTL      int    `yaml:"ttl"`
+		Priority int    `yaml:"priority"`
+	} `yaml:"records"`
 }
 
 var Fixture fixture
@@ -68,19 +76,6 @@ func (s *TestSuite) Request(method, uri string, options *requestOptions) *httpte
 		}
 	}
 
-	/* Form
-	v := url.Values{}
-
-	if options != nil && options.Body != nil {
-		switch body := options.Body.(type) {
-		case map[string]string:
-			for key, val := range body {
-				v.Add(key, val)
-			}
-		}
-	}*/
-
-	// req, err := http.NewRequest(method, uri, strings.NewReader(v.Encode()))
 	req, err := http.NewRequest(method, uri, body)
 	w := httptest.NewRecorder()
 
@@ -91,7 +86,6 @@ func (s *TestSuite) Request(method, uri string, options *requestOptions) *httpte
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	// req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	s.server.ServeHTTP(w, req)
 	Expect(err).To(BeNil())
 

@@ -12,6 +12,7 @@ func (s *TestSuite) APIv1() {
 		s.APIv1User()
 		s.APIv1Token()
 		s.APIv1Domain()
+		s.APIv1Record()
 	})
 }
 

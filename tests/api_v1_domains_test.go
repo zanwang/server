@@ -322,6 +322,7 @@ func (s *TestSuite) APIv1DomainList() {
 			Expect(r.Code).To(Equal(http.StatusOK))
 
 			s.ParseJSON(r.Body, &domains)
+			Expect(domains).To(HaveLen(1))
 			d := domains[0]
 			Expect(d.ID).To(Equal(domain.ID))
 			Expect(d.Name).To(Equal(domain.Name))
@@ -343,6 +344,7 @@ func (s *TestSuite) APIv1DomainList() {
 			Expect(r.Code).To(Equal(http.StatusOK))
 
 			s.ParseJSON(r.Body, &domains)
+			Expect(domains).To(HaveLen(1))
 			d := domains[0]
 			Expect(d.ID).To(Equal(domain.ID))
 			Expect(d.Name).To(Equal(domain.Name))
@@ -360,6 +362,7 @@ func (s *TestSuite) APIv1DomainList() {
 			Expect(r.Code).To(Equal(http.StatusOK))
 
 			s.ParseJSON(r.Body, &domains)
+			Expect(domains).To(HaveLen(1))
 			d := domains[0]
 			Expect(d.ID).To(Equal(domain.ID))
 			Expect(d.Name).To(Equal(domain.Name))

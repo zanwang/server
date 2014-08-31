@@ -25,8 +25,8 @@ type recordForm struct {
 	Name     *string `json:"name"`
 	Type     *string `json:"type"`
 	Value    *string `json:"value"`
-	TTL      *uint   `json:"ttl"`
-	Priority *uint   `json:"priority"`
+	TTL      *int    `json:"ttl"`
+	Priority *int    `json:"priority"`
 }
 
 func (f *recordForm) FieldMap() binding.FieldMap {
@@ -46,36 +46,29 @@ func (a *APIv1) RecordCreate(c *gin.Context) {
 		bindingError(err)
 	}
 
-	if form.Name == nil {
-		panic(errors.New("name", errors.Required, "Name is required"))
-	}
-
 	if form.Type == nil {
 		panic(errors.New("type", errors.Required, "Type is required"))
 	}
 
 	domain := c.MustGet("domain").(*models.Domain)
 	record := models.Record{
-		Name:     *form.Name,
 		Type:     *form.Type,
 		DomainID: domain.ID,
 	}
 
-	if form.Value == nil {
-		record.Value = ""
-	} else {
+	if form.Name != nil {
+		record.Name = *form.Name
+	}
+
+	if form.Value != nil {
 		record.Value = *form.Value
 	}
 
-	if form.TTL == nil {
-		record.TTL = 0
-	} else {
+	if form.TTL != nil {
 		record.TTL = *form.TTL
 	}
 
-	if form.Priority == nil {
-		record.Priority = 0
-	} else {
+	if form.Priority != nil {
 		record.Priority = *form.Priority
 	}
 

@@ -9,3 +9,13 @@ users:
 domains:
   - name: abc
   - name: def
+
+records:
+  - type: A
+    value: 127.0.0.1
+    ttl: 0
+  - name: mail
+    type: MX
+    value: mail.google.com
+    ttl: 300
+    priority: 10

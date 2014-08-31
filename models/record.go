@@ -22,24 +22,24 @@ type Record struct {
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 	DomainID  int64     `db:"domain_id" json:"domain_id"`
-	TTL       uint      `db:"ttl" json:"ttl"`
-	Priority  uint      `db:"priority" json:"priority"`
+	TTL       int       `db:"ttl" json:"ttl"`
+	Priority  int       `db:"priority" json:"priority"`
 }
 
 func (data *Record) Validate() error {
-	if govalidator.IsNull(data.Name) {
-		return errors.New("name", errors.Required, "Name is required")
-	}
-
 	if len(data.Name) > 63 {
 		return errors.New("name", errors.MaxLength, "Maximum length of name is 63")
 	}
 
-	if !rDomainName.MatchString(data.Name) {
+	if len(data.Name) > 0 && !rDomainName.MatchString(data.Name) {
 		return errors.New("name", errors.DomainName, "Domain name is invalid")
 	}
 
-	data.Name = strings.ToUpper(data.Name)
+	if govalidator.IsNull(data.Type) {
+		return errors.New("type", errors.Required, "Type is required")
+	}
+
+	data.Type = strings.ToUpper(data.Type)
 	inarr := false
 
 	for _, str := range RecordType {
@@ -50,15 +50,27 @@ func (data *Record) Validate() error {
 	}
 
 	if !inarr {
-		return errors.New("type", errors.RecordType, "Record type is invalid")
+		return errors.New("type", errors.RecordType, "Type must be one of "+strings.Join(RecordType, ", "))
 	}
 
 	if govalidator.IsNull(data.Value) {
 		return errors.New("value", errors.Required, "Value is required")
 	}
 
-	if data.TTL != 0 && data.TTL > 86400 && data.TTL < 300 {
-		return errors.New("ttl", errors.Range, "TTL must be between 300 - 86400 seconds")
+	if data.TTL < 0 {
+		return errors.New("ttl", errors.Min, "Minimum value of TTL is 0")
+	}
+
+	if data.Priority < 0 {
+		return errors.New("priority", errors.Min, "Minimum value of priority is 0")
+	}
+
+	if data.TTL != 0 && (data.TTL > 86400 || data.TTL < 300) {
+		return errors.New("ttl", errors.Range, "TTL must be between 300-86400 seconds")
+	}
+
+	if data.Priority > 65535 {
+		return errors.New("priority", errors.Max, "Maximum value of priority is 65535")
 	}
 
 	switch data.Type {
