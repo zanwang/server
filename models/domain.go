@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	domainExpiry      = time.Hour * 24 * 365
-	domainRenewPeriod = time.Hour * 24 * 30
+	domainExpiry      = 60 * 60 * 24 * 365
+	domainRenewPeriod = 60 * 60 * 24 * 30
 )
 
 var (
@@ -22,12 +22,12 @@ var (
 
 // Domain model
 type Domain struct {
-	ID        int64     `db:"id" json:"id"`
-	Name      string    `db:"name" json:"name"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
-	ExpiredAt time.Time `db:"expired_at" json:"expired_at"`
-	UserID    int64     `db:"user_id" json:"user_id"`
+	ID        int64  `db:"id" json:"id"`
+	Name      string `db:"name" json:"name"`
+	CreatedAt int64  `db:"created_at" json:"created_at"`
+	UpdatedAt int64  `db:"updated_at" json:"updated_at"`
+	ExpiredAt int64  `db:"expired_at" json:"expired_at"`
+	UserID    int64  `db:"user_id" json:"user_id"`
 }
 
 func (data *Domain) Validate(s gorp.SqlExecutor) error {
@@ -72,10 +72,10 @@ func (data *Domain) PreInsert(s gorp.SqlExecutor) error {
 		return err
 	}
 
-	now := time.Now()
+	now := Now()
 	data.CreatedAt = now
 	data.UpdatedAt = now
-	data.ExpiredAt = now.Add(domainExpiry)
+	data.ExpiredAt = now + domainExpiry
 	return nil
 }
 
@@ -84,7 +84,7 @@ func (data *Domain) PreUpdate(s gorp.SqlExecutor) error {
 		return err
 	}
 
-	data.UpdatedAt = time.Now()
+	data.UpdatedAt = Now()
 	return nil
 }
 
@@ -97,14 +97,13 @@ func (data *Domain) PreDelete(s gorp.SqlExecutor) error {
 }
 
 func (data *Domain) Renew() error {
-	if time.Now().Add(domainRenewPeriod).Before(data.ExpiredAt) {
+	if Now()+domainRenewPeriod < data.ExpiredAt {
 		return errors.API{
 			Status:  http.StatusForbidden,
 			Code:    errors.DomainNotRenewable,
-			Message: "This domain can not be renew until " + data.ExpiredAt.UTC().Format("2006-01-02"),
+			Message: "This domain can not be renew until " + time.Unix(data.ExpiredAt, 0).Format("2006-01-02"),
 		}
 	}
 
-	data.ExpiredAt = data.ExpiredAt.Add(domainExpiry)
 	return nil
 }

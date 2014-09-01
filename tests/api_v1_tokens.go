@@ -2,7 +2,6 @@ package tests
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/majimoe/server/errors"
 	"github.com/majimoe/server/models"
@@ -29,7 +28,7 @@ func (s *TestSuite) createToken(key string, user *models.User, body map[string]s
 	s.ParseJSON(r.Body, &token)
 	Expect(token.Key).To(HaveLen(32))
 	Expect(token.UserID).To(Equal(user.ID))
-	Expect(token.UpdatedAt.Add(time.Hour * 24 * 7)).To(Equal(token.ExpiredAt))
+	Expect(token.UpdatedAt + 60*60*24*7).To(Equal(token.ExpiredAt))
 
 	s.Set(key, &token)
 }

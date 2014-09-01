@@ -4,5 +4,10 @@ go:
   - 1.3
   - tip
 
+before_script:
+  - mysql -e 'create database majimoe_test;'
+
 install: make deps
-script: make test
+script:
+  - make test
+  - make test_mysql

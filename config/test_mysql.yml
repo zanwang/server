@@ -2,11 +2,13 @@ server:
   host: localhost
   port: 9000
   secret: dxxeQUOx5SPQMgdeoi8JTSKj1fRnFA6G
-  logger: true
+  logger: false
 
 database:
-  type: sqlite3
-  path: /tmp/development.sqlite
+  type: mysql
+  path: "travis:@/majimoe_test"
+  engine: InnoDB
+  encoding: UTF8
 
 mailgun:
   domain:
@@ -14,8 +16,8 @@ mailgun:
   public_key:
 
 facebook:
-  app_id: 822439461120188
-  app_secret: 8e35ade4afc01c46fe0a0bb68a9dd16d
+  app_id:
+  app_secret:
 
 # For debugging
 email_activation: false

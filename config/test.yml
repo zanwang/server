@@ -17,9 +17,5 @@ facebook:
   app_id:
   app_secret:
 
-twitter:
-  api_key:
-  api_secret:
-
 # For debugging
 email_activation: false

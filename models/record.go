@@ -3,7 +3,6 @@ package models
 import (
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/coopernurse/gorp"
@@ -15,15 +14,15 @@ var RecordType = []string{"A", "CNAME", "MX", "TXT", "SPF", "AAAA", "NS", "LOC"}
 
 // Record model
 type Record struct {
-	ID        int64     `db:"id" json:"id"`
-	Name      string    `db:"name" json:"name"`
-	Type      string    `db:"type" json:"type"`
-	Value     string    `db:"value" json:"value"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
-	DomainID  int64     `db:"domain_id" json:"domain_id"`
-	TTL       int       `db:"ttl" json:"ttl"`
-	Priority  int       `db:"priority" json:"priority"`
+	ID        int64  `db:"id" json:"id"`
+	Name      string `db:"name" json:"name"`
+	Type      string `db:"type" json:"type"`
+	Value     string `db:"value" json:"value"`
+	CreatedAt int64  `db:"created_at" json:"created_at"`
+	UpdatedAt int64  `db:"updated_at" json:"updated_at"`
+	DomainID  int64  `db:"domain_id" json:"domain_id"`
+	TTL       int    `db:"ttl" json:"ttl"`
+	Priority  int    `db:"priority" json:"priority"`
 }
 
 func (data *Record) Validate() error {
@@ -96,7 +95,7 @@ func (data *Record) PreInsert(s gorp.SqlExecutor) error {
 		return err
 	}
 
-	now := time.Now()
+	now := Now()
 	data.CreatedAt = now
 	data.UpdatedAt = now
 	return nil
@@ -107,6 +106,6 @@ func (data *Record) PreUpdate(s gorp.SqlExecutor) error {
 		return err
 	}
 
-	data.UpdatedAt = time.Now()
+	data.UpdatedAt = Now()
 	return nil
 }

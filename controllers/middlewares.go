@@ -24,7 +24,7 @@ func (m *Middleware) GetToken(c *gin.Context) {
 		return
 	}
 
-	if token.ExpiredAt.Before(time.Now()) {
+	if token.ExpiredAt < time.Now().Unix() {
 		if _, err := models.DB.Delete(&token); err != nil {
 			panic(err)
 		}

@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"path"
 	"text/template"
-	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
 	"github.com/asaskevich/govalidator"
@@ -22,20 +21,18 @@ import (
 )
 
 type User struct {
-	ID                 int64     `db:"id" json:"id"`
-	Name               string    `db:"name" json:"name"`
-	Password           string    `db:"password" json:"-"`
-	Email              string    `db:"email" json:"email"`
-	Avatar             string    `db:"avatar" json:"avatar"`
-	CreatedAt          time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt          time.Time `db:"updated_at" json:"updated_at"`
-	Activated          bool      `db:"activated" json:"activated"`
-	ActivationToken    string    `db:"activation_token" json:"-"`
-	PasswordResetToken string    `db:"password_reset_token" json:"-"`
-	FacebookID         string    `db:"facebook_id" json:"-"`
-	TwitterID          string    `db:"twitter_id" json:"-"`
-	GoogleID           string    `db:"google_id" json:"-"`
-	GithubID           string    `db:"github_id" json:"-"`
+	ID                 int64  `db:"id" json:"id"`
+	Name               string `db:"name" json:"name"`
+	Password           string `db:"password" json:"-"`
+	Email              string `db:"email" json:"email"`
+	Avatar             string `db:"avatar" json:"avatar"`
+	CreatedAt          int64  `db:"created_at" json:"created_at"`
+	UpdatedAt          int64  `db:"updated_at" json:"updated_at"`
+	Activated          bool   `db:"activated" json:"activated"`
+	ActivationToken    string `db:"activation_token" json:"-"`
+	PasswordResetToken string `db:"password_reset_token" json:"-"`
+	FacebookID         string `db:"facebook_id" json:"-"`
+	GoogleID           string `db:"google_id" json:"-"`
 }
 
 const (
@@ -80,7 +77,7 @@ func (data *User) PreInsert(s gorp.SqlExecutor) error {
 		return err
 	}
 
-	now := time.Now()
+	now := Now()
 	data.CreatedAt = now
 	data.UpdatedAt = now
 	return nil
@@ -91,7 +88,7 @@ func (data *User) PreUpdate(s gorp.SqlExecutor) error {
 		return err
 	}
 
-	data.UpdatedAt = time.Now()
+	data.UpdatedAt = Now()
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v1"
@@ -36,11 +37,6 @@ type config struct {
 		AppSecret string `yaml:"app_secret"`
 	} `yaml:"facebook"`
 
-	Twitter struct {
-		APIKey    string `yaml:"api_key"`
-		APISecret string `yaml:"api_secret"`
-	} `yaml:"twitter"`
-
 	EmailActivation bool `yaml:"email_activation"`
 }
 
@@ -71,6 +67,10 @@ func init() {
 		gin.SetMode(gin.TestMode)
 	default:
 		gin.SetMode(gin.DebugMode)
+	}
+
+	if strings.HasPrefix(Env, "test_") {
+		gin.SetMode(gin.TestMode)
 	}
 
 	for _, ext := range configExtname {
