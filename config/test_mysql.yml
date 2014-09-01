@@ -7,7 +7,7 @@ server:
 database:
   type: mysql
   path: "travis:@/majimoe_test"
-  engine: InnoDB
+  engine: MEMORY
   encoding: UTF8
 
 mailgun:
