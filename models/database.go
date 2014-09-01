@@ -22,7 +22,12 @@ func init() {
 	}
 
 	// Build a gorp map
-	DB = &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
+	switch conf.Database.Type {
+	case "sqlite3":
+		DB = &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
+	case "mysql":
+		DB = &gorp.DbMap{Db: db, Dialect: gorp.MySQLDialect{conf.Database.Engine, conf.Database.Encoding}}
+	}
 
 	// Add tables
 	DB.AddTableWithName(User{}, "users").SetKeys(true, "id")

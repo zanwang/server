@@ -19,8 +19,10 @@ type config struct {
 	} `yaml:"server"`
 
 	Database struct {
-		Type string `yaml:"type"`
-		Path string `yaml:"path"`
+		Type     string `yaml:"type"`
+		Path     string `yaml:"path"`
+		Engine   string `yaml:"engine"`
+		Encoding string `yaml:"encoding"`
 	} `yaml:"database"`
 
 	Mailgun struct {
