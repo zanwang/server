@@ -105,5 +105,7 @@ func (data *Domain) Renew() error {
 		}
 	}
 
+	data.ExpiredAt += domainExpiry
+
 	return nil
 }
