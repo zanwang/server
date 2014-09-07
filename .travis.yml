@@ -7,12 +7,17 @@ go:
 services:
   - mysql
 
+env: GO_ENV=test
+
+before_install:
+  - export PATH=/home/travis/gopath/bin:$PATH
+
+install: make deps
+
 before_script:
   - mysql -e "CREATE DATABASE majimoe_test;"
   - mysql -u root -e "GRANT ALL ON majimoe_test.* TO majimoe@localhost IDENTIFIED BY 'majimoe';"
-  - go get bitbucket.org/liamstask/goose/cmd/goose
-  - goose -env="test" up
+  - goose -env test up
 
-install: make deps
 script:
-  - make test
+  - go test -v
