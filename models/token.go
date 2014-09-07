@@ -1,36 +1,56 @@
 package models
 
 import (
-	"github.com/coopernurse/gorp"
-	"github.com/dchest/uniuri"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"io"
+	"strconv"
+
+	"time"
 )
 
 const (
-	tokenExpiry = 60 * 60 * 24 * 7
+	tokenExpiry = time.Hour * 24 * 7
 )
 
-// Token model
 type Token struct {
-	ID        int64  `db:"id" json:"-"`
-	UserID    int64  `db:"user_id" json:"user_id"`
-	Key       string `db:"key" json:"key"`
-	CreatedAt int64  `db:"created_at" json:"-"`
-	UpdatedAt int64  `db:"updated_at" json:"updated_at"`
-	ExpiredAt int64  `db:"expired_at" json:"expired_at"`
+	Id        int64
+	Key       string
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	ExpiredAt time.Time `sql:"-" json:"expired_at"`
+	UserId    int64     `json:"user_id"`
 }
 
-func (data *Token) PreInsert(s gorp.SqlExecutor) error {
-	now := Now()
-	data.Key = uniuri.NewLen(32)
-	data.CreatedAt = now
-	data.UpdatedAt = now
-	data.ExpiredAt = now + tokenExpiry
+func (t Token) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"key":        t.Key,
+		"updated_at": ISOTime(t.UpdatedAt),
+		"expired_at": ISOTime(t.GetExpiredTime()),
+		"user_id":    t.UserId,
+	})
+}
+
+func (t *Token) BeforeSave() error {
+	t.UpdatedAt = time.Now().UTC()
 	return nil
 }
 
-func (data *Token) PreUpdate(s gorp.SqlExecutor) error {
-	now := Now()
-	data.UpdatedAt = now
-	data.ExpiredAt = now + tokenExpiry
+func (t *Token) BeforeCreate() error {
+	h := sha256.New()
+	raw := strconv.FormatInt(t.UserId, 10) + "/" + strconv.FormatInt(t.CreatedAt.Unix(), 10)
+	io.WriteString(h, raw)
+
+	t.Key = hex.EncodeToString(h.Sum(nil))
+	t.CreatedAt = time.Now().UTC()
 	return nil
+}
+
+func (t *Token) GetExpiredTime() time.Time {
+	return t.UpdatedAt.Add(tokenExpiry)
+}
+
+func (t *Token) IsExpired() bool {
+	return t.GetExpiredTime().Before(time.Now())
 }

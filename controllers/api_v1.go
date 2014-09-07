@@ -26,7 +26,7 @@ func (api *APIv1) Recovery(c *gin.Context) {
 	defer func() {
 		if err := recover(); err != nil {
 			switch e := err.(type) {
-			case errors.API:
+			case *errors.API:
 				if e.Status == 0 {
 					e.Status = http.StatusBadRequest
 				} else if e.Status == http.StatusInternalServerError {
@@ -52,8 +52,9 @@ func (api *APIv1) Recovery(c *gin.Context) {
 func (api *APIv1) UpdateToken(c *gin.Context) {
 	defer func() {
 		if data, err := c.Get("token"); err == nil {
-			token := data.(*models.Token)
-			models.DB.Update(token)
+			if token, ok := data.(*models.Token); ok {
+				models.DB.Save(token)
+			}
 		}
 	}()
 

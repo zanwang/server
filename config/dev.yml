@@ -5,8 +5,8 @@ server:
   logger: true
 
 database:
-  type: sqlite3
-  path: /tmp/development.sqlite
+  type: mysql
+  path: "majimoe:majimoe@/majimoe_dev?parseTime=True"
 
 mailgun:
   domain:

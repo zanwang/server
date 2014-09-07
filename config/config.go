@@ -20,10 +20,8 @@ type config struct {
 	} `yaml:"server"`
 
 	Database struct {
-		Type     string `yaml:"type"`
-		Path     string `yaml:"path"`
-		Engine   string `yaml:"engine"`
-		Encoding string `yaml:"encoding"`
+		Type string `yaml:"type"`
+		Path string `yaml:"path"`
 	} `yaml:"database"`
 
 	Mailgun struct {
@@ -33,7 +31,7 @@ type config struct {
 	} `yaml:"mailgun"`
 
 	Facebook struct {
-		AppID     string `yaml:"app_id"`
+		AppId     string `yaml:"app_id"`
 		AppSecret string `yaml:"app_secret"`
 	} `yaml:"facebook"`
 
@@ -44,7 +42,7 @@ const (
 	configDir   = "config"
 	Development = "dev"
 	Production  = "prod"
-	Testing     = "test"
+	Test        = "test"
 )
 
 var (
@@ -63,7 +61,7 @@ func init() {
 	switch Env {
 	case Production:
 		gin.SetMode(gin.ReleaseMode)
-	case Testing:
+	case Test:
 		gin.SetMode(gin.TestMode)
 	default:
 		gin.SetMode(gin.DebugMode)

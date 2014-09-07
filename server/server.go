@@ -25,7 +25,7 @@ func Server() *gin.Engine {
 	r.GET("/signup", controllers.App)
 	r.GET("/forgot_password", controllers.App)
 	r.GET("/settings", controllers.App)
-	r.GET("/activation", controllers.Activation)
+	r.GET("/users/:user_id/activation/:token", controllers.UserActivation)
 	r.NotFound404(controllers.NotFound)
 
 	apiv1Group := r.Group("/api/v1")

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-sql-driver/mysql"
 	"github.com/majimoe/server/errors"
 	"github.com/majimoe/server/models"
 	"github.com/majimoe/server/util"
@@ -11,10 +12,10 @@ import (
 )
 
 func (a *APIv1) DomainList(c *gin.Context) {
-	var domains []models.Domain
+	var domains []*models.Domain
 	user := c.MustGet("user").(*models.User)
 
-	if _, err := models.DB.Select(&domains, "SELECT * FROM domains WHERE user_id=?", user.ID); err != nil {
+	if err := models.DB.Where("user_id = ?", user.Id).Find(&domains).Error; err != nil {
 		panic(err)
 	}
 
@@ -31,11 +32,30 @@ func (f *domainForm) FieldMap() binding.FieldMap {
 	}
 }
 
+func handleDomainDBError(err error) {
+	switch e := err.(type) {
+
+	case *mysql.MySQLError:
+		switch e.Number {
+		case errors.MySQLDuplicateEntry:
+			panic(&errors.API{
+				Field:   "name",
+				Code:    errors.DomainUsed,
+				Message: "Domain name has been taken",
+			})
+		default:
+			panic(e)
+		}
+	default:
+		panic(e)
+	}
+}
+
 func (a *APIv1) DomainCreate(c *gin.Context) {
 	user := c.MustGet("user").(*models.User)
 
 	if !user.Activated {
-		panic(errors.API{
+		panic(&errors.API{
 			Status:  http.StatusForbidden,
 			Code:    errors.UserNotActivated,
 			Message: "User has not been activated",
@@ -54,11 +74,11 @@ func (a *APIv1) DomainCreate(c *gin.Context) {
 
 	domain := models.Domain{
 		Name:   *form.Name,
-		UserID: user.ID,
+		UserId: user.Id,
 	}
 
-	if err := models.DB.Insert(&domain); err != nil {
-		panic(err)
+	if err := models.DB.Create(&domain).Error; err != nil {
+		handleDomainDBError(err)
 	}
 
 	util.Render.JSON(c.Writer, http.StatusCreated, domain)
@@ -83,8 +103,8 @@ func (a *APIv1) DomainUpdate(c *gin.Context) {
 		domain.Name = *form.Name
 	}
 
-	if _, err := models.DB.Update(domain); err != nil {
-		panic(err)
+	if err := models.DB.Save(domain).Error; err != nil {
+		handleDomainDBError(err)
 	}
 
 	util.Render.JSON(c.Writer, http.StatusOK, domain)
@@ -93,7 +113,7 @@ func (a *APIv1) DomainUpdate(c *gin.Context) {
 func (a *APIv1) DomainDestroy(c *gin.Context) {
 	domain := c.MustGet("domain").(*models.Domain)
 
-	if _, err := models.DB.Delete(domain); err != nil {
+	if err := models.DB.Delete(domain).Error; err != nil {
 		panic(err)
 	}
 
@@ -107,7 +127,7 @@ func (a *APIv1) DomainRenew(c *gin.Context) {
 		panic(err)
 	}
 
-	if _, err := models.DB.Update(domain); err != nil {
+	if err := models.DB.Save(domain).Error; err != nil {
 		panic(err)
 	}
 

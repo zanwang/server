@@ -14,7 +14,7 @@ func (a *APIv1) RecordList(c *gin.Context) {
 	var records []models.Record
 	domain := c.MustGet("domain").(*models.Domain)
 
-	if _, err := models.DB.Select(&records, "SELECT * FROM records WHERE domain_id=?", domain.ID); err != nil {
+	if err := models.DB.Where("domain_id = ?", domain.Id).Find(&records).Error; err != nil {
 		panic(err)
 	}
 
@@ -53,7 +53,7 @@ func (a *APIv1) RecordCreate(c *gin.Context) {
 	domain := c.MustGet("domain").(*models.Domain)
 	record := models.Record{
 		Type:     *form.Type,
-		DomainID: domain.ID,
+		DomainId: domain.Id,
 	}
 
 	if form.Name != nil {
@@ -65,14 +65,14 @@ func (a *APIv1) RecordCreate(c *gin.Context) {
 	}
 
 	if form.TTL != nil {
-		record.TTL = *form.TTL
+		record.Ttl = *form.TTL
 	}
 
 	if form.Priority != nil {
 		record.Priority = *form.Priority
 	}
 
-	if err := models.DB.Insert(&record); err != nil {
+	if err := models.DB.Create(&record).Error; err != nil {
 		panic(err)
 	}
 
@@ -107,14 +107,14 @@ func (a *APIv1) RecordUpdate(c *gin.Context) {
 	}
 
 	if form.TTL != nil {
-		record.TTL = *form.TTL
+		record.Ttl = *form.TTL
 	}
 
 	if form.Priority != nil {
 		record.Priority = *form.Priority
 	}
 
-	if _, err := models.DB.Update(record); err != nil {
+	if err := models.DB.Save(record).Error; err != nil {
 		panic(err)
 	}
 
@@ -124,7 +124,7 @@ func (a *APIv1) RecordUpdate(c *gin.Context) {
 func (a *APIv1) RecordDestroy(c *gin.Context) {
 	record := c.MustGet("record").(*models.Record)
 
-	if _, err := models.DB.Delete(record); err != nil {
+	if err := models.DB.Delete(record).Error; err != nil {
 		panic(err)
 	}
 

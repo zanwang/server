@@ -5,8 +5,8 @@ server:
   logger: false
 
 database:
-  type: sqlite3
-  path: ":memory:"
+  type: mysql
+  path: "majimoe:majimoe@/majimoe_test?parseTime=True"
 
 mailgun:
   domain:

@@ -4,36 +4,23 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"path"
 	"text/template"
+	"time"
 
 	"code.google.com/p/go.crypto/bcrypt"
+
 	"github.com/asaskevich/govalidator"
-	"github.com/coopernurse/gorp"
 	"github.com/dchest/uniuri"
 	"github.com/majimoe/server/config"
 	"github.com/majimoe/server/errors"
 	"github.com/majimoe/server/util"
 )
-
-type User struct {
-	ID                 int64  `db:"id" json:"id"`
-	Name               string `db:"name" json:"name"`
-	Password           string `db:"password" json:"-"`
-	Email              string `db:"email" json:"email"`
-	Avatar             string `db:"avatar" json:"avatar"`
-	CreatedAt          int64  `db:"created_at" json:"created_at"`
-	UpdatedAt          int64  `db:"updated_at" json:"updated_at"`
-	Activated          bool   `db:"activated" json:"activated"`
-	ActivationToken    string `db:"activation_token" json:"-"`
-	PasswordResetToken string `db:"password_reset_token" json:"-"`
-	FacebookID         string `db:"facebook_id" json:"-"`
-	GoogleID           string `db:"google_id" json:"-"`
-}
 
 const (
 	mailSender    = "maji.moe <noreply@maji.moe>"
@@ -50,68 +37,71 @@ func init() {
 	))
 }
 
-func (data *User) Validate(s gorp.SqlExecutor) error {
-	if govalidator.IsNull(data.Name) {
+type User struct {
+	Id                 int64
+	Name               string
+	Password           string
+	Email              string
+	Avatar             string
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+	Activated          bool
+	ActivationToken    string
+	PasswordResetToken string
+	FacebookId         string
+	GoogleId           string
+}
+
+func (u User) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"id":         u.Id,
+		"name":       u.Name,
+		"email":      u.Email,
+		"avatar":     u.Avatar,
+		"created_at": ISOTime(u.CreatedAt),
+		"updated_at": ISOTime(u.UpdatedAt),
+		"activated":  u.Activated,
+	})
+}
+
+func (u *User) PublicProfile() map[string]interface{} {
+	return map[string]interface{}{
+		"id":         u.Id,
+		"name":       u.Name,
+		"avatar":     u.Avatar,
+		"created_at": ISOTime(u.CreatedAt),
+		"updated_at": ISOTime(u.UpdatedAt),
+	}
+}
+
+func (u *User) BeforeSave() error {
+	if govalidator.IsNull(u.Name) {
 		return errors.New("name", errors.Required, "Name is required")
 	}
 
-	if !govalidator.IsEmail(data.Email) {
+	if !govalidator.IsEmail(u.Email) {
 		return errors.New("email", errors.Email, "Email is invalid")
 	}
 
-	var user User
-
-	if err := s.SelectOne(&user, "SELECT id FROM users WHERE email=?", data.Email); err == nil {
-		if data.ID != user.ID {
-			return errors.New("email", errors.EmailUsed, "Email has been taken")
-		}
-	}
-
-	data.Name = govalidator.Trim(data.Name, "")
+	u.Name = govalidator.Trim(u.Name, "")
+	u.UpdatedAt = time.Now().UTC()
 
 	return nil
 }
 
-func (data *User) PreInsert(s gorp.SqlExecutor) error {
-	if err := data.Validate(s); err != nil {
-		return err
-	}
-
-	now := Now()
-	data.CreatedAt = now
-	data.UpdatedAt = now
+func (u *User) BeforeCreate() error {
+	u.CreatedAt = time.Now().UTC()
 	return nil
 }
 
-func (data *User) PreUpdate(s gorp.SqlExecutor) error {
-	if err := data.Validate(s); err != nil {
-		return err
-	}
-
-	data.UpdatedAt = Now()
-	return nil
-}
-
-func (data *User) PreDelete(s gorp.SqlExecutor) error {
-	if _, err := s.Exec("DELETE FROM domains WHERE user_id=?", data.ID); err != nil {
-		return err
-	}
-
-	if _, err := s.Exec("DELETE FROM tokens WHERE user_id=?", data.ID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (data *User) Gravatar() {
+func (u *User) Gravatar() {
 	h := md5.New()
-	io.WriteString(h, data.Email)
+	io.WriteString(h, u.Email)
 
-	data.Avatar = "//www.gravatar.com/avatar/" + hex.EncodeToString(h.Sum(nil))
+	u.Avatar = "//www.gravatar.com/avatar/" + hex.EncodeToString(h.Sum(nil))
 }
 
-func (data *User) GeneratePassword(password string) error {
+func (u *User) GeneratePassword(password string) error {
 	if govalidator.IsNull(password) {
 		return errors.New("password", errors.Required, "Password is required")
 	}
@@ -123,19 +113,19 @@ func (data *User) GeneratePassword(password string) error {
 	if hash, err := bcrypt.GenerateFromPassword([]byte(password), 10); err != nil {
 		return err
 	} else {
-		data.Password = string(hash)
+		u.Password = string(hash)
 	}
 
 	return nil
 }
 
-func (data *User) Authenticate(password string) error {
+func (u *User) Authenticate(password string) error {
 	if !govalidator.IsByteLength(password, 6, 50) {
 		return errors.New("password", errors.Length, "The length of password must be between 6-50")
 	}
 
-	if govalidator.IsNull(data.Password) {
-		return errors.API{
+	if govalidator.IsNull(u.Password) {
+		return &errors.API{
 			Status:  http.StatusUnauthorized,
 			Field:   "password",
 			Code:    errors.PasswordUnset,
@@ -143,8 +133,8 @@ func (data *User) Authenticate(password string) error {
 		}
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(data.Password), []byte(password)); err != nil {
-		return errors.API{
+	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
+		return &errors.API{
 			Status:  http.StatusUnauthorized,
 			Field:   "password",
 			Code:    errors.WrongPassword,
@@ -155,23 +145,23 @@ func (data *User) Authenticate(password string) error {
 	return nil
 }
 
-func (data *User) SetActivated(activated bool) {
+func (u *User) SetActivated(activated bool) {
 	if activated {
-		data.Activated = true
+		u.Activated = true
 	} else {
-		data.Activated = false
-		data.ActivationToken = uniuri.NewLen(32)
+		u.Activated = false
+		u.ActivationToken = uniuri.NewLen(32)
 	}
 }
 
-func (data *User) SendActivationMail() {
-	if data.Activated || !config.Config.EmailActivation {
+func (u *User) SendActivationMail() {
+	if u.Activated || !config.Config.EmailActivation {
 		return
 	}
 
 	var buf bytes.Buffer
 	err := mailTmpl.Execute(&buf, map[string]interface{}{
-		"User": data,
+		"User": u,
 	})
 
 	if err != nil {
@@ -179,7 +169,7 @@ func (data *User) SendActivationMail() {
 		return
 	}
 
-	recipient := fmt.Sprintf(mailRecipient, data.Name, data.Email)
+	recipient := fmt.Sprintf(mailRecipient, u.Name, u.Email)
 	msg := util.Mailgun.NewMessage(mailSender, mailTitle, buf.String(), recipient)
 
 	if _, _, err := util.Mailgun.Send(msg); err != nil {

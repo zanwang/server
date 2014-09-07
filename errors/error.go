@@ -72,12 +72,12 @@ type API struct {
 	Message string `json:"message"`
 }
 
-func (e API) Error() string {
+func (e *API) Error() string {
 	return e.Message
 }
 
-func New(field string, code int, message string) API {
-	return API{
+func New(field string, code int, message string) *API {
+	return &API{
 		Status:  http.StatusBadRequest,
 		Field:   field,
 		Code:    code,

@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"github.com/majimoe/server/config"
+	"github.com/majimoe/server/models"
 	"github.com/majimoe/server/server"
 )
 
@@ -13,4 +14,5 @@ func main() {
 	port := conf.Server.Port
 
 	server.Server().Run(host + ":" + strconv.Itoa(port))
+	defer models.DB.Close()
 }

@@ -1,0 +1,7 @@
+development:
+  driver: mymysql
+  open: majimoe_dev/majimoe/majimoe
+
+test:
+  driver: mymysql
+  open: majimoe_test/majimoe/majimoe

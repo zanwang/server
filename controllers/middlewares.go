@@ -1,9 +1,9 @@
 package controllers
 
 import (
+	"log"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/majimoe/server/errors"
@@ -13,23 +13,24 @@ import (
 type Middleware struct{}
 
 func (m *Middleware) GetToken(c *gin.Context) {
-	var token models.Token
 	auth := strings.Split(c.Request.Header.Get("Authorization"), " ")
 
 	if strings.ToLower(auth[0]) != "token" || auth[1] == "" {
 		return
 	}
 
-	if err := models.DB.SelectOne(&token, "SELECT * FROM tokens WHERE key=?", auth[1]); err != nil {
+	var token models.Token
+
+	if err := models.DB.Where("`key` = ?", auth[1]).Find(&token).Error; err != nil {
 		return
 	}
 
-	if token.ExpiredAt < time.Now().Unix() {
-		if _, err := models.DB.Delete(&token); err != nil {
-			panic(err)
+	if token.IsExpired() {
+		if err := models.DB.Delete(&token).Error; err != nil {
+			log.Println(err)
 		}
 
-		panic(errors.API{
+		panic(&errors.API{
 			Status:  http.StatusUnauthorized,
 			Code:    errors.TokenExpired,
 			Message: "Token is expired",
@@ -43,7 +44,7 @@ func (m *Middleware) TokenRequired(c *gin.Context) {
 	m.GetToken(c)
 
 	if _, err := c.Get("token"); err != nil {
-		panic(errors.API{
+		panic(&errors.API{
 			Status:  http.StatusUnauthorized,
 			Code:    errors.TokenRequired,
 			Message: "Token is required",
@@ -53,10 +54,9 @@ func (m *Middleware) TokenRequired(c *gin.Context) {
 
 func (m *Middleware) GetUser(c *gin.Context) {
 	var user models.User
-	userID := c.Params.ByName("user_id")
 
-	if err := models.DB.SelectOne(&user, "SELECT * FROM users WHERE id=?", userID); err != nil {
-		panic(errors.API{
+	if err := models.DB.First(&user, c.Params.ByName("user_id")).Error; err != nil {
+		panic(&errors.API{
 			Status:  http.StatusNotFound,
 			Code:    errors.UserNotExist,
 			Message: "User does not exist",
@@ -69,11 +69,22 @@ func (m *Middleware) GetUser(c *gin.Context) {
 func (m *Middleware) CheckPermissionOfUser(c *gin.Context) {
 	m.GetUser(c)
 
-	token := c.MustGet("token").(*models.Token)
+	var token *models.Token
+
+	if data, err := c.Get("token"); err != nil {
+		panic(&errors.API{
+			Status:  http.StatusUnauthorized,
+			Code:    errors.TokenRequired,
+			Message: "Token is required",
+		})
+	} else {
+		token = data.(*models.Token)
+	}
+
 	user := c.MustGet("user").(*models.User)
 
-	if token.UserID != user.ID {
-		panic(errors.API{
+	if token.UserId != user.Id {
+		panic(&errors.API{
 			Status:  http.StatusForbidden,
 			Code:    errors.UserForbidden,
 			Message: "You are forbidden to access this user",
@@ -83,10 +94,9 @@ func (m *Middleware) CheckPermissionOfUser(c *gin.Context) {
 
 func (m *Middleware) GetDomain(c *gin.Context) {
 	var domain models.Domain
-	domainID := c.Params.ByName("domain_id")
 
-	if err := models.DB.SelectOne(&domain, "SELECT * FROM domains WHERE id=?", domainID); err != nil {
-		panic(errors.API{
+	if err := models.DB.First(&domain, c.Params.ByName("domain_id")).Error; err != nil {
+		panic(&errors.API{
 			Status:  http.StatusNotFound,
 			Code:    errors.DomainNotExist,
 			Message: "Domain does not exist",
@@ -99,11 +109,22 @@ func (m *Middleware) GetDomain(c *gin.Context) {
 func (m *Middleware) CheckOwnershipOfDomain(c *gin.Context) {
 	m.GetDomain(c)
 
-	token := c.MustGet("token").(*models.Token)
+	var token *models.Token
+
+	if data, err := c.Get("token"); err != nil {
+		panic(&errors.API{
+			Status:  http.StatusUnauthorized,
+			Code:    errors.TokenRequired,
+			Message: "Token is required",
+		})
+	} else {
+		token = data.(*models.Token)
+	}
+
 	domain := c.MustGet("domain").(*models.Domain)
 
-	if domain.UserID != token.UserID {
-		panic(errors.API{
+	if domain.UserId != token.UserId {
+		panic(&errors.API{
 			Status:  http.StatusForbidden,
 			Code:    errors.DomainForbidden,
 			Message: "You are forbidden to access this domain",
@@ -113,19 +134,18 @@ func (m *Middleware) CheckOwnershipOfDomain(c *gin.Context) {
 
 func (m *Middleware) GetRecord(c *gin.Context) {
 	var record models.Record
-	var domain models.Domain
-	recordID := c.Params.ByName("record_id")
 
-	if err := models.DB.SelectOne(&record, "SELECT * FROM records WHERE id=?", recordID); err != nil {
-		panic(errors.API{
+	if err := models.DB.First(&record, c.Params.ByName("record_id")).Error; err != nil {
+		panic(&errors.API{
 			Status:  http.StatusNotFound,
 			Code:    errors.RecordNotExist,
 			Message: "Record does not exist",
 		})
 	}
 
-	if err := models.DB.SelectOne(&domain, "SELECT * FROM domains WHERE id=?", record.DomainID); err != nil {
-		panic(errors.API{
+	var domain models.Domain
+	if err := models.DB.First(&domain, record.DomainId).Error; err != nil {
+		panic(&errors.API{
 			Status:  http.StatusNotFound,
 			Code:    errors.DomainNotExist,
 			Message: "Domain does not exist",
@@ -139,11 +159,22 @@ func (m *Middleware) GetRecord(c *gin.Context) {
 func (m *Middleware) CheckOwnershipOfRecord(c *gin.Context) {
 	m.GetRecord(c)
 
-	token := c.MustGet("token").(*models.Token)
+	var token *models.Token
+
+	if data, err := c.Get("token"); err != nil {
+		panic(&errors.API{
+			Status:  http.StatusUnauthorized,
+			Code:    errors.TokenRequired,
+			Message: "Token is required",
+		})
+	} else {
+		token = data.(*models.Token)
+	}
+
 	domain := c.MustGet("domain").(*models.Domain)
 
-	if token.UserID != domain.UserID {
-		panic(errors.API{
+	if token.UserId != domain.UserId {
+		panic(&errors.API{
 			Status:  http.StatusForbidden,
 			Code:    errors.RecordForbidden,
 			Message: "You are forbidden to access this record",

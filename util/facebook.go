@@ -9,5 +9,5 @@ var Facebook *facebook.App
 
 func init() {
 	conf := config.Config
-	Facebook = facebook.New(conf.Facebook.AppID, conf.Facebook.AppSecret)
+	Facebook = facebook.New(conf.Facebook.AppId, conf.Facebook.AppSecret)
 }

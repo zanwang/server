@@ -4,10 +4,15 @@ go:
   - 1.3
   - tip
 
+services:
+  - mysql
+
 before_script:
-  - mysql -e 'create database majimoe_test;'
+  - mysql -e "CREATE DATABASE majimoe_test;"
+  - mysql -u root -e "GRANT ALL ON majimoe_test.* TO majimoe@localhost IDENTIFIED BY 'majimoe';"
+  - go get bitbucket.org/liamstask/goose/cmd/goose
+  - goose -env="test" up
 
 install: make deps
 script:
   - make test
-  - make test_mysql

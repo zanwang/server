@@ -31,7 +31,6 @@ func responseToken(c *gin.Context, status int, token *models.Token) {
 }
 
 func (a *APIv1) TokenCreate(c *gin.Context) {
-	var user models.User
 	var form tokenForm
 
 	if err := binding.Bind(c.Request, &form); err != nil {
@@ -50,8 +49,10 @@ func (a *APIv1) TokenCreate(c *gin.Context) {
 		panic(errors.New("email", errors.Email, "Email is invalid"))
 	}
 
-	if err := models.DB.SelectOne(&user, "SELECT id, password FROM users WHERE email=?", *form.Email); err != nil {
-		panic(errors.API{
+	var user models.User
+
+	if err := models.DB.Where("email = ?", *form.Email).Find(&user).Error; err != nil {
+		panic(&errors.API{
 			Status:  http.StatusBadRequest,
 			Field:   "email",
 			Code:    errors.UserNotExist,
@@ -63,9 +64,11 @@ func (a *APIv1) TokenCreate(c *gin.Context) {
 		panic(err)
 	}
 
-	token := models.Token{UserID: user.ID}
+	token := models.Token{
+		UserId: user.Id,
+	}
 
-	if err := models.DB.Insert(&token); err != nil {
+	if err := models.DB.Create(&token).Error; err != nil {
 		panic(err)
 	}
 
@@ -75,7 +78,7 @@ func (a *APIv1) TokenCreate(c *gin.Context) {
 func (a *APIv1) TokenUpdate(c *gin.Context) {
 	token := c.MustGet("token").(*models.Token)
 
-	if _, err := models.DB.Update(token); err != nil {
+	if err := models.DB.Save(token).Error; err != nil {
 		panic(err)
 	}
 
@@ -84,8 +87,9 @@ func (a *APIv1) TokenUpdate(c *gin.Context) {
 
 func (a *APIv1) TokenDestroy(c *gin.Context) {
 	token := c.MustGet("token").(*models.Token)
+	defer c.Set("token", nil)
 
-	if _, err := models.DB.Delete(token); err != nil {
+	if err := models.DB.Delete(token).Error; err != nil {
 		panic(err)
 	}
 

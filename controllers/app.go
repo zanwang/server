@@ -20,13 +20,10 @@ func NotFound(c *gin.Context) {
 	util.Render.HTML(c.Writer, http.StatusNotFound, "error/404", nil)
 }
 
-func Activation(c *gin.Context) {
+func UserActivation(c *gin.Context) {
 	var user models.User
-	query := c.Request.URL.Query()
-	id := query.Get("id")
-	token := query.Get("token")
 
-	if err := models.DB.SelectOne(&user, "SELECT * FROM users WHERE id=?", id); err != nil {
+	if err := models.DB.First(&user, c.Params.ByName("user_id")).Error; err != nil {
 		NotFound(c)
 		return
 	}
@@ -36,14 +33,14 @@ func Activation(c *gin.Context) {
 		return
 	}
 
-	if user.ActivationToken != token {
+	if user.ActivationToken != c.Params.ByName("token") {
 		util.Render.HTML(c.Writer, http.StatusBadRequest, "error/activation", nil)
 		return
 	}
 
 	user.Activated = true
 
-	if _, err := models.DB.Update(&user); err != nil {
+	if err := models.DB.Save(&user).Error; err != nil {
 		panic(err)
 	}
 

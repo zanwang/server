@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-sql-driver/mysql"
 	"github.com/majimoe/server/errors"
 	"github.com/majimoe/server/models"
 	"github.com/majimoe/server/util"
@@ -23,6 +24,24 @@ func (f *userForm) FieldMap() binding.FieldMap {
 		&f.OldPassword: "old_password",
 		&f.Password:    "password",
 		&f.Email:       "email",
+	}
+}
+
+func handleUserDBError(err error) {
+	switch e := err.(type) {
+	case *mysql.MySQLError:
+		switch e.Number {
+		case errors.MySQLDuplicateEntry:
+			panic(&errors.API{
+				Field:   "email",
+				Code:    errors.EmailUsed,
+				Message: "Email has been taken",
+			})
+		default:
+			panic(e)
+		}
+	default:
+		panic(e)
 	}
 }
 
@@ -57,8 +76,8 @@ func (a *APIv1) UserCreate(c *gin.Context) {
 	user.SetActivated(false)
 	user.Gravatar()
 
-	if err := models.DB.Insert(&user); err != nil {
-		panic(err)
+	if err := models.DB.Create(&user).Error; err != nil {
+		handleUserDBError(err)
 	}
 
 	util.Render.JSON(c.Writer, http.StatusCreated, user)
@@ -71,19 +90,13 @@ func (a *APIv1) UserShow(c *gin.Context) {
 
 	if data, err := c.Get("token"); err == nil {
 		token := data.(*models.Token)
-		isOwner = user.ID == token.UserID
+		isOwner = user.Id == token.UserId
 	}
 
 	if isOwner {
 		util.Render.JSON(c.Writer, http.StatusOK, user)
 	} else {
-		util.Render.JSON(c.Writer, http.StatusOK, map[string]interface{}{
-			"id":         user.ID,
-			"name":       user.Name,
-			"avatar":     user.Avatar,
-			"created_at": user.CreatedAt,
-			"updated_at": user.UpdatedAt,
-		})
+		util.Render.JSON(c.Writer, http.StatusOK, user.PublicProfile())
 	}
 }
 
@@ -106,7 +119,9 @@ func (a *APIv1) UserUpdate(c *gin.Context) {
 			}
 
 			if err := user.Authenticate(*form.OldPassword); err != nil {
-				if e, ok := err.(errors.API); ok {
+				if e, ok := err.(*errors.API); ok {
+					e.Field = "old_password"
+
 					if e.Status == http.StatusUnauthorized {
 						e.Status = http.StatusForbidden
 					}
@@ -129,8 +144,8 @@ func (a *APIv1) UserUpdate(c *gin.Context) {
 		user.SetActivated(false)
 	}
 
-	if _, err := models.DB.Update(user); err != nil {
-		panic(err)
+	if err := models.DB.Save(user).Error; err != nil {
+		handleUserDBError(err)
 	}
 
 	util.Render.JSON(c.Writer, http.StatusOK, user)
@@ -140,7 +155,7 @@ func (a *APIv1) UserUpdate(c *gin.Context) {
 func (a *APIv1) UserDestroy(c *gin.Context) {
 	user := c.MustGet("user").(*models.User)
 
-	if _, err := models.DB.Delete(user); err != nil {
+	if err := models.DB.Delete(user).Error; err != nil {
 		panic(err)
 	}
 
