@@ -20,4 +20,4 @@ before_script:
   - goose -env test up
 
 script:
-  - go test -v
+  - godep go test

@@ -1,0 +1,99 @@
+{
+	"ImportPath": "github.com/majimoe/server",
+	"GoVersion": "go1.3.1",
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/go.crypto/bcrypt",
+			"Comment": "null-215",
+			"Rev": "2a61df2221b6be21be1c1ded77821b0f71b29584"
+		},
+		{
+			"ImportPath": "code.google.com/p/go.crypto/blowfish",
+			"Comment": "null-215",
+			"Rev": "2a61df2221b6be21be1c1ded77821b0f71b29584"
+		},
+		{
+			"ImportPath": "github.com/asaskevich/govalidator",
+			"Rev": "0aac9dbd861b4831f39f1fd306a8191ae27acc01"
+		},
+		{
+			"ImportPath": "github.com/dchest/uniuri",
+			"Rev": "bc4af7603a3e0ce9d58009f82fca481555182e1c"
+		},
+		{
+			"ImportPath": "github.com/gin-gonic/contrib/static",
+			"Rev": "e9efbef205f470b07afe985980f9074bb955f39d"
+		},
+		{
+			"ImportPath": "github.com/gin-gonic/gin",
+			"Comment": "v0.4-3-gb3f322c",
+			"Rev": "b3f322c5fc19d68e297ae0a175770b232eae0bc1"
+		},
+		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.2-1-g7094cf0",
+			"Rev": "7094cf0331ed6bde3cd75aa5d1da0e7764b526c9"
+		},
+		{
+			"ImportPath": "github.com/golang/oauth2",
+			"Rev": "38c48926828cdb44d8de75fea8e71a2ebe7a9bd2"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "14f550f51af52180c2eefed15e5fd18d63c0a64a"
+		},
+		{
+			"ImportPath": "github.com/gorilla/securecookie",
+			"Rev": "1b0c7f6e9ab3d7f500fd7d50c7ad835ff428139b"
+		},
+		{
+			"ImportPath": "github.com/gorilla/sessions",
+			"Rev": "aa5e036e6c44aec69a32eb41097001978b29ad31"
+		},
+		{
+			"ImportPath": "github.com/huandu/facebook",
+			"Rev": "5b62b9c3514be2efae6f5bfe7768dba9ebacd8fc"
+		},
+		{
+			"ImportPath": "github.com/jacobsa/oglematchers",
+			"Rev": "4fc24f97b5b74022c2a3f4ca7eed57ca29083d3e"
+		},
+		{
+			"ImportPath": "github.com/jinzhu/gorm",
+			"Rev": "1ad419004fa8ae90145d4e3ff4fcb2629996b54b"
+		},
+		{
+			"ImportPath": "github.com/julienschmidt/httprouter",
+			"Rev": "afa7ae29ca847252b56d9279b6a012c1a7a5e225"
+		},
+		{
+			"ImportPath": "github.com/lib/pq/hstore",
+			"Rev": "b021d0ef20de4f7ed239e2cbe3b95648d8e41e95"
+		},
+		{
+			"ImportPath": "github.com/mailgun/mailgun-go",
+			"Rev": "3b7eda8f3bfd97aebc7f7342d12205930a218a98"
+		},
+		{
+			"ImportPath": "github.com/mbanzon/simplehttp",
+			"Rev": "6722b2563d432e901cc00a9d3786266501f1e5ec"
+		},
+		{
+			"ImportPath": "github.com/mholt/binding",
+			"Rev": "cb6c28ac11daf4a8a0ad10cbda1d38041b126d9b"
+		},
+		{
+			"ImportPath": "github.com/smartystreets/goconvey/convey",
+			"Comment": "1.5.0-253-g84bfacc",
+			"Rev": "84bfacced3bc440664d6456b8a3a49bc8b98c55b"
+		},
+		{
+			"ImportPath": "gopkg.in/unrolled/render.v1",
+			"Rev": "40ac5716c7e0bffcc440aac649ea4b880a5d7735"
+		},
+		{
+			"ImportPath": "gopkg.in/yaml.v1",
+			"Rev": "1b9791953ba4027efaeb728c7355e542a203be5e"
+		}
+	]
+}
