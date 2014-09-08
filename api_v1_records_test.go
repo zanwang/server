@@ -62,14 +62,22 @@ func deleteRecord(record *models.Record) {
 }
 
 func TestAPIv1RecordCreate(t *testing.T) {
-	Convey("API v1 - Record create", t, func() {
-		_, u1 := createUser1()
-		_, u2 := createUser2()
-		_, t1 := createToken1()
-		_, t2 := createToken2()
-		activateUser(u1)
-		_, d1 := createDomain1(t1)
+	_, u1 := createUser1()
+	_, u2 := createUser2()
+	_, t1 := createToken1()
+	_, t2 := createToken2()
+	activateUser(u1)
+	_, d1 := createDomain1(t1)
 
+	defer func() {
+		deleteUser(u1)
+		deleteUser(u2)
+		deleteToken(t1)
+		deleteToken(t2)
+		deleteDomain(d1)
+	}()
+
+	Convey("API v1 - Record create", t, func() {
 		Convey("Success", func() {
 			r, record := createRecord1(t1, d1)
 			defer deleteRecord(record)
@@ -582,27 +590,28 @@ func TestAPIv1RecordCreate(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.DomainNotExist)
 			So(err.Message, ShouldEqual, "Domain does not exist")
 		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
-			deleteDomain(d1)
-		})
 	})
 }
 
 func TestAPIv1RecordList(t *testing.T) {
-	Convey("API v1 - Record list", t, func() {
-		_, u1 := createUser1()
-		_, u2 := createUser2()
-		_, t1 := createToken1()
-		_, t2 := createToken2()
-		activateUser(u1)
-		_, d1 := createDomain1(t1)
-		_, r1 := createRecord1(t1, d1)
+	_, u1 := createUser1()
+	_, u2 := createUser2()
+	_, t1 := createToken1()
+	_, t2 := createToken2()
+	activateUser(u1)
+	_, d1 := createDomain1(t1)
+	_, r1 := createRecord1(t1, d1)
 
+	defer func() {
+		deleteUser(u1)
+		deleteUser(u2)
+		deleteToken(t1)
+		deleteToken(t2)
+		deleteDomain(d1)
+		deleteRecord(r1)
+	}()
+
+	Convey("API v1 - Record list", t, func() {
 		Convey("Success", func() {
 			var records []models.Record
 			r := Request(RequestOptions{
@@ -663,15 +672,6 @@ func TestAPIv1RecordList(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.DomainNotExist)
 			So(err.Message, ShouldEqual, "Domain does not exist")
 		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
-			deleteDomain(d1)
-			deleteRecord(r1)
-		})
 	})
 }
 
@@ -680,15 +680,24 @@ func recordURL(record *models.Record) string {
 }
 
 func TestAPIv1RecordShow(t *testing.T) {
-	Convey("API v1 - Record show", t, func() {
-		_, u1 := createUser1()
-		_, u2 := createUser2()
-		_, t1 := createToken1()
-		_, t2 := createToken2()
-		activateUser(u1)
-		_, d1 := createDomain1(t1)
-		_, r1 := createRecord1(t1, d1)
+	_, u1 := createUser1()
+	_, u2 := createUser2()
+	_, t1 := createToken1()
+	_, t2 := createToken2()
+	activateUser(u1)
+	_, d1 := createDomain1(t1)
+	_, r1 := createRecord1(t1, d1)
 
+	defer func() {
+		deleteUser(u1)
+		deleteUser(u2)
+		deleteToken(t1)
+		deleteToken(t2)
+		deleteDomain(d1)
+		deleteRecord(r1)
+	}()
+
+	Convey("API v1 - Record show", t, func() {
 		Convey("Success", func() {
 			var record models.Record
 			r := Request(RequestOptions{
@@ -748,28 +757,28 @@ func TestAPIv1RecordShow(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.RecordNotExist)
 			So(err.Message, ShouldEqual, "Record does not exist")
 		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
-			deleteDomain(d1)
-			deleteRecord(r1)
-		})
 	})
 }
 
 func TestAPIv1RecordUpdate(t *testing.T) {
-	Convey("API v1 - Record update", t, func() {
-		_, u1 := createUser1()
-		_, u2 := createUser2()
-		_, t1 := createToken1()
-		_, t2 := createToken2()
-		activateUser(u1)
-		_, d1 := createDomain1(t1)
-		_, r1 := createRecord1(t1, d1)
+	_, u1 := createUser1()
+	_, u2 := createUser2()
+	_, t1 := createToken1()
+	_, t2 := createToken2()
+	activateUser(u1)
+	_, d1 := createDomain1(t1)
+	_, r1 := createRecord1(t1, d1)
 
+	defer func() {
+		deleteUser(u1)
+		deleteUser(u2)
+		deleteToken(t1)
+		deleteToken(t2)
+		deleteDomain(d1)
+		deleteRecord(r1)
+	}()
+
+	Convey("API v1 - Record update", t, func() {
 		Convey("Success", func() {
 			time.Sleep(time.Second)
 
@@ -1227,27 +1236,31 @@ func TestAPIv1RecordUpdate(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.RecordNotExist)
 			So(err.Message, ShouldEqual, "Record does not exist")
 		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
-			deleteDomain(d1)
-			deleteRecord(r1)
-		})
 	})
 }
 
 func TestAPIv1RecordDestroy(t *testing.T) {
+	_, u1 := createUser1()
+	_, u2 := createUser2()
+	_, t1 := createToken1()
+	_, t2 := createToken2()
+	activateUser(u1)
+	_, d1 := createDomain1(t1)
+
+	defer func() {
+		deleteUser(u1)
+		deleteUser(u2)
+		deleteToken(t1)
+		deleteToken(t2)
+		deleteDomain(d1)
+	}()
+
 	Convey("API v1 - Record destroy", t, func() {
-		_, u1 := createUser1()
-		_, u2 := createUser2()
-		_, t1 := createToken1()
-		_, t2 := createToken2()
-		activateUser(u1)
-		_, d1 := createDomain1(t1)
 		_, r1 := createRecord1(t1, d1)
+
+		Reset(func() {
+			deleteRecord(r1)
+		})
 
 		Convey("Success", func() {
 			r := Request(RequestOptions{
@@ -1313,15 +1326,6 @@ func TestAPIv1RecordDestroy(t *testing.T) {
 			ParseJSON(r.Body, &err)
 			So(err.Code, ShouldEqual, errors.RecordNotExist)
 			So(err.Message, ShouldEqual, "Record does not exist")
-		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
-			deleteDomain(d1)
-			deleteRecord(r1)
 		})
 	})
 }

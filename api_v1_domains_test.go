@@ -53,12 +53,19 @@ func domainCreateURL(user *models.User) string {
 }
 
 func TestAPIv1DomainCreate(t *testing.T) {
-	Convey("API v1 - Domain create", t, func() {
-		_, u1 := createUser1()
-		_, u2 := createUser2()
-		_, t1 := createToken1()
-		_, t2 := createToken2()
+	_, u1 := createUser1()
+	_, u2 := createUser2()
+	_, t1 := createToken1()
+	_, t2 := createToken2()
 
+	defer func() {
+		deleteUser(u1)
+		deleteUser(u2)
+		deleteToken(t1)
+		deleteToken(t2)
+	}()
+
+	Convey("API v1 - Domain create", t, func() {
 		Convey("Success", func() {
 			activateUser(u1)
 
@@ -226,26 +233,26 @@ func TestAPIv1DomainCreate(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.UserNotExist)
 			So(err.Message, ShouldEqual, "User does not exist")
 		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
-		})
 	})
 }
 
 func TestAPIv1DomainList(t *testing.T) {
-	Convey("API v1 - Domain list", t, func() {
-		_, u1 := createUser1()
-		_, u2 := createUser2()
-		_, t1 := createToken1()
-		_, t2 := createToken2()
-		activateUser(u1)
-		activateUser(u2)
-		_, d1 := createDomain1(t1)
+	_, u1 := createUser1()
+	_, u2 := createUser2()
+	_, t1 := createToken1()
+	_, t2 := createToken2()
+	activateUser(u1)
+	_, d1 := createDomain1(t1)
 
+	defer func() {
+		deleteUser(u1)
+		deleteUser(u2)
+		deleteToken(t1)
+		deleteToken(t2)
+		deleteDomain(d1)
+	}()
+
+	Convey("API v1 - Domain list", t, func() {
 		Convey("Success", func() {
 			var domains []models.Domain
 			r := Request(RequestOptions{
@@ -277,14 +284,6 @@ func TestAPIv1DomainList(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.UserNotExist)
 			So(err.Message, ShouldEqual, "User does not exist")
 		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
-			deleteDomain(d1)
-		})
 	})
 }
 
@@ -293,12 +292,18 @@ func domainURL(domain *models.Domain) string {
 }
 
 func TestAPIv1DomainShow(t *testing.T) {
-	Convey("API v1 - Domain show", t, func() {
-		_, u1 := createUser1()
-		_, t1 := createToken1()
-		activateUser(u1)
-		_, d1 := createDomain1(t1)
+	_, u1 := createUser1()
+	_, t1 := createToken1()
+	activateUser(u1)
+	_, d1 := createDomain1(t1)
 
+	defer func() {
+		deleteUser(u1)
+		deleteToken(t1)
+		deleteDomain(d1)
+	}()
+
+	Convey("API v1 - Domain show", t, func() {
 		Convey("Success", func() {
 			var domain models.Domain
 			r := Request(RequestOptions{
@@ -323,26 +328,29 @@ func TestAPIv1DomainShow(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.DomainNotExist)
 			So(err.Message, ShouldEqual, "Domain does not exist")
 		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteToken(t1)
-			deleteDomain(d1)
-		})
 	})
 }
 
 func TestAPIv1DomainUpdate(t *testing.T) {
-	Convey("API v1 - Domain update", t, func() {
-		_, u1 := createUser1()
-		_, u2 := createUser2()
-		_, t1 := createToken1()
-		_, t2 := createToken2()
-		activateUser(u1)
-		activateUser(u2)
-		_, d1 := createDomain1(t1)
-		_, d2 := createDomain2(t2)
+	_, u1 := createUser1()
+	_, u2 := createUser2()
+	_, t1 := createToken1()
+	_, t2 := createToken2()
+	activateUser(u1)
+	activateUser(u2)
+	_, d1 := createDomain1(t1)
+	_, d2 := createDomain2(t2)
 
+	defer func() {
+		deleteUser(u1)
+		deleteUser(u2)
+		deleteToken(t1)
+		deleteToken(t2)
+		deleteDomain(d1)
+		deleteDomain(d2)
+	}()
+
+	Convey("API v1 - Domain update", t, func() {
 		Convey("Success", func() {
 			time.Sleep(time.Second)
 
@@ -488,26 +496,29 @@ func TestAPIv1DomainUpdate(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.DomainNotExist)
 			So(err.Message, ShouldEqual, "Domain does not exist")
 		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
-			deleteDomain(d1)
-			deleteDomain(d2)
-		})
 	})
 }
 
 func TestAPIv1DomainDestroy(t *testing.T) {
+	_, u1 := createUser1()
+	_, u2 := createUser2()
+	_, t1 := createToken1()
+	_, t2 := createToken2()
+	activateUser(u1)
+
+	defer func() {
+		deleteUser(u1)
+		deleteUser(u2)
+		deleteToken(t1)
+		deleteToken(t2)
+	}()
+
 	Convey("API v1 - Domain destroy", t, func() {
-		_, u1 := createUser1()
-		_, u2 := createUser2()
-		_, t1 := createToken1()
-		_, t2 := createToken2()
-		activateUser(u1)
 		_, d1 := createDomain1(t1)
+
+		Reset(func() {
+			deleteDomain(d1)
+		})
 
 		Convey("Success", func() {
 			r := Request(RequestOptions{
@@ -574,14 +585,6 @@ func TestAPIv1DomainDestroy(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.DomainNotExist)
 			So(err.Message, ShouldEqual, "Domain does not exist")
 		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
-			deleteDomain(d1)
-		})
 	})
 }
 
@@ -590,13 +593,25 @@ func domainRenewURL(domain *models.Domain) string {
 }
 
 func TestAPIv1DomainRenew(t *testing.T) {
+	_, u1 := createUser1()
+	_, u2 := createUser2()
+	_, t1 := createToken1()
+	_, t2 := createToken2()
+	activateUser(u1)
+
+	defer func() {
+		deleteUser(u1)
+		deleteUser(u2)
+		deleteToken(t1)
+		deleteToken(t2)
+	}()
+
 	Convey("API v1 - Domain renew", t, func() {
-		_, u1 := createUser1()
-		_, u2 := createUser2()
-		_, t1 := createToken1()
-		_, t2 := createToken2()
-		activateUser(u1)
 		_, d1 := createDomain1(t1)
+
+		Reset(func() {
+			deleteDomain(d1)
+		})
 
 		Convey("Success", func() {
 			d1.ExpiredAt = time.Now().AddDate(0, 0, 7)
@@ -682,14 +697,6 @@ func TestAPIv1DomainRenew(t *testing.T) {
 			ParseJSON(r.Body, &err)
 			So(err.Code, ShouldEqual, errors.DomainNotExist)
 			So(err.Message, ShouldEqual, "Domain does not exist")
-		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
-			deleteDomain(d1)
 		})
 	})
 }

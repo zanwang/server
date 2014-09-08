@@ -229,6 +229,13 @@ func TestAPIv1UserShow(t *testing.T) {
 		_, t1 := createToken1()
 		_, t2 := createToken2()
 
+		Reset(func() {
+			deleteUser(u1)
+			deleteUser(u2)
+			deleteToken(t1)
+			deleteToken(t2)
+		})
+
 		Convey("Success (private)", func() {
 			var user models.User
 			r := Request(RequestOptions{
@@ -316,13 +323,6 @@ func TestAPIv1UserShow(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.UserNotExist)
 			So(err.Message, ShouldEqual, "User does not exist")
 		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
-		})
 	})
 }
 
@@ -332,6 +332,13 @@ func TestAPIv1UserUpdate(t *testing.T) {
 		_, u2 := createUser2()
 		_, t1 := createToken1()
 		_, t2 := createToken2()
+
+		Reset(func() {
+			deleteUser(u1)
+			deleteUser(u2)
+			deleteToken(t1)
+			deleteToken(t2)
+		})
 
 		Convey("Success", func() {
 			time.Sleep(time.Second)
@@ -626,13 +633,6 @@ func TestAPIv1UserUpdate(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.UserNotExist)
 			So(err.Message, ShouldEqual, "User does not exist")
 		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
-		})
 	})
 }
 
@@ -642,6 +642,13 @@ func TestAPIv1UserDestroy(t *testing.T) {
 		_, u2 := createUser2()
 		_, t1 := createToken1()
 		_, t2 := createToken2()
+
+		Reset(func() {
+			deleteUser(u1)
+			deleteUser(u2)
+			deleteToken(t1)
+			deleteToken(t2)
+		})
 
 		Convey("Success", func() {
 			r := Request(RequestOptions{
@@ -707,13 +714,6 @@ func TestAPIv1UserDestroy(t *testing.T) {
 			ParseJSON(r.Body, &err)
 			So(err.Code, ShouldEqual, errors.UserNotExist)
 			So(err.Message, ShouldEqual, "User does not exist")
-		})
-
-		Reset(func() {
-			deleteUser(u1)
-			deleteUser(u2)
-			deleteToken(t1)
-			deleteToken(t2)
 		})
 	})
 }

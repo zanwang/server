@@ -47,9 +47,13 @@ func deleteToken(token *models.Token) {
 }
 
 func TestAPIv1TokenCreate(t *testing.T) {
-	Convey("API v1 - Token create", t, func() {
-		_, user := createUser1()
+	_, user := createUser1()
 
+	defer func() {
+		deleteUser(user)
+	}()
+
+	Convey("API v1 - Token create", t, func() {
 		Convey("Success", func() {
 			r, token := createToken1()
 			defer deleteToken(token)
@@ -205,18 +209,19 @@ func TestAPIv1TokenCreate(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.PasswordUnset)
 			So(err.Message, ShouldEqual, "Password has not been set")
 		})
-
-		Reset(func() {
-			deleteUser(user)
-		})
 	})
 }
 
 func TestAPIv1TokenUpdate(t *testing.T) {
-	Convey("API v1 - Token update", t, func() {
-		_, user := createUser1()
-		_, token := createToken1()
+	_, user := createUser1()
+	_, token := createToken1()
 
+	defer func() {
+		deleteUser(user)
+		deleteToken(token)
+	}()
+
+	Convey("API v1 - Token update", t, func() {
 		Convey("Success", func() {
 			// Wait for a while to let token updated
 			time.Sleep(time.Second)
@@ -253,18 +258,22 @@ func TestAPIv1TokenUpdate(t *testing.T) {
 			So(err.Code, ShouldEqual, errors.TokenRequired)
 			So(err.Message, ShouldEqual, "Token is required")
 		})
-
-		Reset(func() {
-			deleteUser(user)
-			deleteToken(token)
-		})
 	})
 }
 
 func TestAPIv1TokenDestroy(t *testing.T) {
+	_, user := createUser1()
+
+	defer func() {
+		deleteUser(user)
+	}()
+
 	Convey("API v1 - Token destroy", t, func() {
-		_, user := createUser1()
 		_, token := createToken1()
+
+		Reset(func() {
+			deleteToken(token)
+		})
 
 		Convey("Success", func() {
 			r := Request(RequestOptions{
@@ -298,11 +307,6 @@ func TestAPIv1TokenDestroy(t *testing.T) {
 			ParseJSON(r.Body, &err)
 			So(err.Code, ShouldEqual, errors.TokenRequired)
 			So(err.Message, ShouldEqual, "Token is required")
-		})
-
-		Reset(func() {
-			deleteUser(user)
-			deleteToken(token)
 		})
 	})
 }
