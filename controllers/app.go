@@ -46,3 +46,23 @@ func UserActivation(c *gin.Context) {
 
 	http.Redirect(c.Writer, c.Request, "/app", http.StatusFound)
 }
+
+func PasswordReset(c *gin.Context) {
+	var user models.User
+
+	if err := models.DB.First(&user, c.Params.ByName("user_id")).Error; err != nil {
+		NotFound(c)
+		return
+	}
+
+	if user.PasswordResetToken != c.Params.ByName("token") {
+		util.Render.HTML(c.Writer, http.StatusBadRequest, "error/password_reset", nil)
+		return
+	}
+
+	util.Render.HTML(c.Writer, http.StatusOK, "password_reset", nil)
+}
+
+func PasswordResetSubmit(c *gin.Context) {
+	//
+}

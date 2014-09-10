@@ -23,17 +23,25 @@ import (
 )
 
 const (
-	mailSender    = "maji.moe <noreply@maji.moe>"
-	mailTitle     = "Activate your account"
-	mailRecipient = "%s <%s>"
+	mailSender             = "maji.moe <noreply@maji.moe>"
+	mailRecipient          = "%s <%s>"
+	activationMailTitle    = "Activate your account"
+	passwordResetMailTitle = "Reset your password"
 )
 
-var mailTmpl *template.Template
+var (
+	activationMailTmpl, passwordResetMailTmpl *template.Template
+)
 
 func init() {
 	baseDir := config.BaseDir
-	mailTmpl = template.Must(template.ParseFiles(
-		path.Join(baseDir, "views", "email", "activation.html"),
+	emailViewDir := path.Join(baseDir, "views", "email")
+
+	activationMailTmpl = template.Must(template.ParseFiles(
+		path.Join(emailViewDir, "activation.html"),
+	))
+	passwordResetMailTmpl = template.Must(template.ParseFiles(
+		path.Join(emailViewDir, "password_reset.html"),
 	))
 }
 
@@ -160,17 +168,38 @@ func (u *User) SendActivationMail() {
 	}
 
 	var buf bytes.Buffer
-	err := mailTmpl.Execute(&buf, map[string]interface{}{
-		"User": u,
-	})
 
-	if err != nil {
+	if err := activationMailTmpl.Execute(&buf, map[string]interface{}{
+		"User": u,
+	}); err != nil {
 		log.Println(err)
 		return
 	}
 
 	recipient := fmt.Sprintf(mailRecipient, u.Name, u.Email)
-	msg := util.Mailgun.NewMessage(mailSender, mailTitle, buf.String(), recipient)
+	msg := util.Mailgun.NewMessage(mailSender, activationMailTitle, buf.String(), recipient)
+
+	if _, _, err := util.Mailgun.Send(msg); err != nil {
+		log.Println(err)
+	}
+}
+
+func (u *User) SendPasswordResetMail() {
+	if !config.Config.EmailActivation {
+		return
+	}
+
+	var buf bytes.Buffer
+
+	if err := passwordResetMailTmpl.Execute(&buf, map[string]interface{}{
+		"User": u,
+	}); err != nil {
+		log.Println(err)
+		return
+	}
+
+	recipient := fmt.Sprintf(mailRecipient, u.Name, u.Email)
+	msg := util.Mailgun.NewMessage(mailSender, passwordResetMailTitle, buf.String(), recipient)
 
 	if _, _, err := util.Mailgun.Send(msg); err != nil {
 		log.Println(err)

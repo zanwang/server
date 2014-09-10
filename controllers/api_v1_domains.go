@@ -34,7 +34,6 @@ func (f *domainForm) FieldMap() binding.FieldMap {
 
 func handleDomainDBError(err error) {
 	switch e := err.(type) {
-
 	case *mysql.MySQLError:
 		switch e.Number {
 		case errors.MySQLDuplicateEntry:

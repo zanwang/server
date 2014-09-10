@@ -12,6 +12,7 @@ import (
 func Server() *gin.Engine {
 	conf := config.Config
 	r := gin.New()
+	middleware := controllers.Middleware{}
 
 	if conf.Server.Logger {
 		r.Use(gin.Logger())
@@ -26,11 +27,11 @@ func Server() *gin.Engine {
 	r.GET("/forgot_password", controllers.App)
 	r.GET("/settings", controllers.App)
 	r.GET("/users/:user_id/activation/:token", controllers.UserActivation)
+	r.GET("/users/:user_id/passwords/reset/:token", controllers.PasswordReset)
+	r.POST("/users/:user_id/passwords/reset", controllers.PasswordResetSubmit)
 	r.NotFound404(controllers.NotFound)
 
 	apiv1Group := r.Group("/api/v1")
-	middleware := controllers.Middleware{}
-
 	{
 		apiv1 := controllers.APIv1{}
 
@@ -49,6 +50,7 @@ func Server() *gin.Engine {
 		apiv1Group.GET("/users/:user_id/domains", middleware.GetUser, apiv1.DomainList)
 		apiv1Group.POST("/users/:user_id/domains", middleware.TokenRequired, middleware.CheckPermissionOfUser, apiv1.DomainCreate)
 
+		apiv1Group.GET("/domains", apiv1.DomainList)
 		apiv1Group.GET("/domains/:domain_id", middleware.GetDomain, apiv1.DomainShow)
 		apiv1Group.PUT("/domains/:domain_id", middleware.TokenRequired, middleware.CheckOwnershipOfDomain, apiv1.DomainUpdate)
 		apiv1Group.DELETE("/domains/:domain_id", middleware.TokenRequired, middleware.CheckOwnershipOfDomain, apiv1.DomainDestroy)
@@ -59,6 +61,9 @@ func Server() *gin.Engine {
 		apiv1Group.GET("/records/:record_id", middleware.TokenRequired, middleware.CheckOwnershipOfRecord, apiv1.RecordShow)
 		apiv1Group.PUT("/records/:record_id", middleware.TokenRequired, middleware.CheckOwnershipOfRecord, apiv1.RecordUpdate)
 		apiv1Group.DELETE("/records/:record_id", middleware.TokenRequired, middleware.CheckOwnershipOfRecord, apiv1.RecordDestroy)
+
+		apiv1Group.POST("/emails/resend", apiv1.EmailResend)
+		apiv1Group.POST("/passwords/reset", apiv1.PasswordReset)
 	}
 
 	r.Use(static.Serve(path.Join(config.BaseDir, "public")))
