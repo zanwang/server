@@ -1,5 +1,6 @@
 deps:
 	go get github.com/tools/godep
+	go get bitbucket.org/liamstask/goose/cmd/goose
 	godep restore
 
 install: deps
