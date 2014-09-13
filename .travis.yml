@@ -17,12 +17,13 @@ env: GO_ENV=test
 before_install:
   - export PATH=/home/travis/gopath/bin:$PATH
 
-install: make deps
+install:
+  - make deps
 
 before_script:
   - mysql -e "CREATE DATABASE majimoe_test;"
   - mysql -u root -e "GRANT ALL ON majimoe_test.* TO majimoe@localhost IDENTIFIED BY 'majimoe';"
-  - goose -env test up
+  - env=test make migrate
 
 script:
   - godep go test
