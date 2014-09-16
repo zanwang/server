@@ -91,6 +91,10 @@ func (u *User) BeforeSave() error {
 		return errors.New("email", errors.Email, "Email is invalid")
 	}
 
+	if len(u.Name) > 100 {
+		return errors.New("name", errors.MaxLength, "Maximum length of name is 100")
+	}
+
 	u.Name = govalidator.Trim(u.Name, "")
 	u.UpdatedAt = time.Now().UTC()
 

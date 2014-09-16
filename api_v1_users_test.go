@@ -137,6 +137,25 @@ func TestAPIv1UserCreate(t *testing.T) {
 			So(err.Message, ShouldEqual, "Email is required")
 		})
 
+		Convey("Name too long", func() {
+			var err errors.API
+			r := Request(RequestOptions{
+				Method: "POST",
+				URL:    "/api/v1/users",
+				Body: map[string]interface{}{
+					"name":     "Johnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+					"password": "123456",
+					"email":    "john@maji.moe",
+				},
+			})
+
+			So(r.Code, ShouldEqual, http.StatusBadRequest)
+			ParseJSON(r.Body, &err)
+			So(err.Field, ShouldEqual, "name")
+			So(err.Code, ShouldEqual, errors.MaxLength)
+			So(err.Message, ShouldEqual, "Maximum length of name is 100")
+		})
+
 		Convey("Password too short", func() {
 			var err errors.API
 			r := Request(RequestOptions{
