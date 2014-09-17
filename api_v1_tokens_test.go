@@ -149,8 +149,8 @@ func TestAPIv1TokenCreate(t *testing.T) {
 			So(r.Code, ShouldEqual, http.StatusBadRequest)
 			ParseJSON(r.Body, &err)
 			So(err.Field, ShouldEqual, "password")
-			So(err.Code, ShouldEqual, errors.Length)
-			So(err.Message, ShouldEqual, "The length of password must be between 6-50")
+			So(err.Code, ShouldEqual, errors.MinLength)
+			So(err.Message, ShouldEqual, "Minimum length of password is 6")
 		})
 
 		Convey("Password too long", func() {
@@ -160,15 +160,15 @@ func TestAPIv1TokenCreate(t *testing.T) {
 				URL:    "/api/v1/tokens",
 				Body: map[string]interface{}{
 					"email":    Fixture.Users[0].Email,
-					"password": "1234654654313543543543434365465313543435435446546543413541",
+					"password": "123465465431354354354343436546531354343543544654654",
 				},
 			})
 
 			So(r.Code, ShouldEqual, http.StatusBadRequest)
 			ParseJSON(r.Body, &err)
 			So(err.Field, ShouldEqual, "password")
-			So(err.Code, ShouldEqual, errors.Length)
-			So(err.Message, ShouldEqual, "The length of password must be between 6-50")
+			So(err.Code, ShouldEqual, errors.MaxLength)
+			So(err.Message, ShouldEqual, "Maximum length of password is 50")
 		})
 
 		Convey("Wrong password", func() {

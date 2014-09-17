@@ -118,8 +118,12 @@ func (u *User) GeneratePassword(password string) error {
 		return errors.New("password", errors.Required, "Password is required")
 	}
 
-	if !govalidator.IsByteLength(password, 6, 50) {
-		return errors.New("password", errors.Length, "The length of password must be between 6-50")
+	if len(password) < 6 {
+		return errors.New("password", errors.MinLength, "Minimum length of password is 6")
+	}
+
+	if len(password) > 50 {
+		return errors.New("password", errors.MaxLength, "Maximum length of password is 50")
 	}
 
 	if hash, err := bcrypt.GenerateFromPassword([]byte(password), 10); err != nil {
@@ -132,8 +136,12 @@ func (u *User) GeneratePassword(password string) error {
 }
 
 func (u *User) Authenticate(password string) error {
-	if !govalidator.IsByteLength(password, 6, 50) {
-		return errors.New("password", errors.Length, "The length of password must be between 6-50")
+	if len(password) < 6 {
+		return errors.New("password", errors.MinLength, "Minimum length of password is 6")
+	}
+
+	if len(password) > 50 {
+		return errors.New("password", errors.MaxLength, "Maximum length of password is 50")
 	}
 
 	if govalidator.IsNull(u.Password) {

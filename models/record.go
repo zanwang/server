@@ -72,16 +72,16 @@ func (r *Record) BeforeSave() error {
 		return errors.New("value", errors.Required, "Value is required")
 	}
 
-	if r.Ttl < 0 {
-		return errors.New("ttl", errors.Min, "Minimum value of TTL is 0")
-	}
-
 	if r.Priority < 0 {
 		return errors.New("priority", errors.Min, "Minimum value of priority is 0")
 	}
 
-	if r.Ttl != 0 && (r.Ttl > 86400 || r.Ttl < 300) {
-		return errors.New("ttl", errors.Range, "TTL must be between 300-86400 seconds")
+	if r.Ttl != 0 {
+		if r.Ttl < 300 {
+			return errors.New("ttl", errors.Min, "TTL should be 0 (automatic) or at least 300 seconds")
+		} else if r.Ttl > 86400 {
+			return errors.New("ttl", errors.Max, "Maximum value of TTL is 86400 seconds")
+		}
 	}
 
 	if r.Priority > 65535 {

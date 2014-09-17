@@ -237,8 +237,8 @@ func TestAPIv1RecordCreate(t *testing.T) {
 			So(r.Code, ShouldEqual, http.StatusBadRequest)
 			ParseJSON(r.Body, &err)
 			So(err.Field, ShouldEqual, "ttl")
-			So(err.Code, ShouldEqual, errors.Range)
-			So(err.Message, ShouldEqual, "TTL must be between 300-86400 seconds")
+			So(err.Code, ShouldEqual, errors.Min)
+			So(err.Message, ShouldEqual, "TTL should be 0 (automatic) or at least 300 seconds")
 		})
 
 		Convey("TTL too large", func() {
@@ -259,8 +259,8 @@ func TestAPIv1RecordCreate(t *testing.T) {
 			So(r.Code, ShouldEqual, http.StatusBadRequest)
 			ParseJSON(r.Body, &err)
 			So(err.Field, ShouldEqual, "ttl")
-			So(err.Code, ShouldEqual, errors.Range)
-			So(err.Message, ShouldEqual, "TTL must be between 300-86400 seconds")
+			So(err.Code, ShouldEqual, errors.Max)
+			So(err.Message, ShouldEqual, "Maximum value of TTL is 86400 seconds")
 		})
 
 		Convey("Negative TTL", func() {
@@ -282,7 +282,7 @@ func TestAPIv1RecordCreate(t *testing.T) {
 			ParseJSON(r.Body, &err)
 			So(err.Field, ShouldEqual, "ttl")
 			So(err.Code, ShouldEqual, errors.Min)
-			So(err.Message, ShouldEqual, "Minimum value of TTL is 0")
+			So(err.Message, ShouldEqual, "TTL should be 0 (automatic) or at least 300 seconds")
 		})
 
 		Convey("Priority too large", func() {
@@ -901,8 +901,8 @@ func TestAPIv1RecordUpdate(t *testing.T) {
 			So(r.Code, ShouldEqual, http.StatusBadRequest)
 			ParseJSON(r.Body, &err)
 			So(err.Field, ShouldEqual, "ttl")
-			So(err.Code, ShouldEqual, errors.Range)
-			So(err.Message, ShouldEqual, "TTL must be between 300-86400 seconds")
+			So(err.Code, ShouldEqual, errors.Min)
+			So(err.Message, ShouldEqual, "TTL should be 0 (automatic) or at least 300 seconds")
 		})
 
 		Convey("TTL too large", func() {
@@ -921,8 +921,8 @@ func TestAPIv1RecordUpdate(t *testing.T) {
 			So(r.Code, ShouldEqual, http.StatusBadRequest)
 			ParseJSON(r.Body, &err)
 			So(err.Field, ShouldEqual, "ttl")
-			So(err.Code, ShouldEqual, errors.Range)
-			So(err.Message, ShouldEqual, "TTL must be between 300-86400 seconds")
+			So(err.Code, ShouldEqual, errors.Max)
+			So(err.Message, ShouldEqual, "Maximum value of TTL is 86400 seconds")
 		})
 
 		Convey("Negative TTL", func() {
@@ -942,7 +942,7 @@ func TestAPIv1RecordUpdate(t *testing.T) {
 			ParseJSON(r.Body, &err)
 			So(err.Field, ShouldEqual, "ttl")
 			So(err.Code, ShouldEqual, errors.Min)
-			So(err.Message, ShouldEqual, "Minimum value of TTL is 0")
+			So(err.Message, ShouldEqual, "TTL should be 0 (automatic) or at least 300 seconds")
 		})
 
 		Convey("Priority too large", func() {

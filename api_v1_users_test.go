@@ -171,8 +171,8 @@ func TestAPIv1UserCreate(t *testing.T) {
 			So(r.Code, ShouldEqual, http.StatusBadRequest)
 			ParseJSON(r.Body, &err)
 			So(err.Field, ShouldEqual, "password")
-			So(err.Code, ShouldEqual, errors.Length)
-			So(err.Message, ShouldEqual, "The length of password must be between 6-50")
+			So(err.Code, ShouldEqual, errors.MinLength)
+			So(err.Message, ShouldEqual, "Minimum length of password is 6")
 		})
 
 		Convey("Password too long", func() {
@@ -182,7 +182,7 @@ func TestAPIv1UserCreate(t *testing.T) {
 				URL:    "/api/v1/users",
 				Body: map[string]interface{}{
 					"name":     "John",
-					"password": "123456465465465465465645456456456456456456456456456456456",
+					"password": "123456465465465465465645456456456456456456456456456",
 					"email":    "john@maji.moe",
 				},
 			})
@@ -190,8 +190,8 @@ func TestAPIv1UserCreate(t *testing.T) {
 			So(r.Code, ShouldEqual, http.StatusBadRequest)
 			ParseJSON(r.Body, &err)
 			So(err.Field, ShouldEqual, "password")
-			So(err.Code, ShouldEqual, errors.Length)
-			So(err.Message, ShouldEqual, "The length of password must be between 6-50")
+			So(err.Code, ShouldEqual, errors.MaxLength)
+			So(err.Message, ShouldEqual, "Maximum length of password is 50")
 		})
 
 		Convey("Email format", func() {
@@ -519,8 +519,8 @@ func TestAPIv1UserUpdate(t *testing.T) {
 			So(r.Code, ShouldEqual, http.StatusBadRequest)
 			ParseJSON(r.Body, &err)
 			So(err.Field, ShouldEqual, "password")
-			So(err.Code, ShouldEqual, errors.Length)
-			So(err.Message, ShouldEqual, "The length of password must be between 6-50")
+			So(err.Code, ShouldEqual, errors.MinLength)
+			So(err.Message, ShouldEqual, "Minimum length of password is 6")
 		})
 
 		Convey("Password too long", func() {
@@ -533,15 +533,15 @@ func TestAPIv1UserUpdate(t *testing.T) {
 				},
 				Body: map[string]interface{}{
 					"old_password": Fixture.Users[0].Password,
-					"password":     "123464646546546546546546546546546546546546546546546546546546546",
+					"password":     "123464646546546546546546546546546546546546546546546",
 				},
 			})
 
 			So(r.Code, ShouldEqual, http.StatusBadRequest)
 			ParseJSON(r.Body, &err)
 			So(err.Field, ShouldEqual, "password")
-			So(err.Code, ShouldEqual, errors.Length)
-			So(err.Message, ShouldEqual, "The length of password must be between 6-50")
+			So(err.Code, ShouldEqual, errors.MaxLength)
+			So(err.Message, ShouldEqual, "Maximum length of password is 50")
 		})
 
 		Convey("Wrong current password", func() {
