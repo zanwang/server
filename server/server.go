@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/majimoe/server/config"
 	"github.com/majimoe/server/controllers"
+	"github.com/tommy351/gin-cors"
 )
 
 func Server() *gin.Engine {
@@ -17,6 +18,8 @@ func Server() *gin.Engine {
 	if conf.Server.Logger {
 		r.Use(gin.Logger())
 	}
+
+	r.Use(cors.Middleware(cors.Options{}))
 
 	r.Use(controllers.Recovery)
 

@@ -88,6 +88,10 @@
 			"Rev": "84bfacced3bc440664d6456b8a3a49bc8b98c55b"
 		},
 		{
+			"ImportPath": "github.com/tommy351/gin-cors",
+			"Rev": "1a290fc71bb902dad18e23fc2d5782a06517bf71"
+		},
+		{
 			"ImportPath": "gopkg.in/unrolled/render.v1",
 			"Rev": "40ac5716c7e0bffcc440aac649ea4b880a5d7735"
 		},
