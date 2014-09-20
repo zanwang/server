@@ -38,12 +38,13 @@ func (t *Token) BeforeSave() error {
 }
 
 func (t *Token) BeforeCreate() error {
+	t.CreatedAt = time.Now().UTC()
+
 	h := sha256.New()
-	raw := strconv.FormatInt(t.UserId, 10) + "/" + strconv.FormatInt(t.CreatedAt.Unix(), 10)
+	raw := strconv.FormatInt(t.UserId, 10) + "/" + strconv.FormatInt(t.CreatedAt.UnixNano(), 10)
 	io.WriteString(h, raw)
 
 	t.Key = hex.EncodeToString(h.Sum(nil))
-	t.CreatedAt = time.Now().UTC()
 	return nil
 }
 

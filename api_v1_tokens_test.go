@@ -67,6 +67,19 @@ func TestAPIv1TokenCreate(t *testing.T) {
 			So(token.UserId, ShouldEqual, user.Id)
 		})
 
+		Convey("Duplicated token", func() {
+			_, t1 := createToken1()
+			time.Sleep(time.Second)
+			r, t2 := createToken1()
+			defer deleteToken(t1)
+			defer deleteToken(t2)
+
+			So(r.Code, ShouldEqual, http.StatusCreated)
+			So(t2.UserId, ShouldEqual, t1.UserId)
+			So(t2.Key, ShouldNotEqual, t1.Key)
+			So(t2.UpdatedAt, ShouldHappenAfter, t1.UpdatedAt)
+		})
+
 		Convey("Email required", func() {
 			var err errors.API
 			r := Request(RequestOptions{
