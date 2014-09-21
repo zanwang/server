@@ -599,7 +599,9 @@ func TestAPIv1RecordList(t *testing.T) {
 	_, t1 := createToken1()
 	_, t2 := createToken2()
 	activateUser(u1)
+	activateUser(u2)
 	_, d1 := createDomain1(t1)
+	_, d2 := createDomain2(t2)
 	_, r1 := createRecord1(t1, d1)
 
 	defer func() {
@@ -608,6 +610,7 @@ func TestAPIv1RecordList(t *testing.T) {
 		deleteToken(t1)
 		deleteToken(t2)
 		deleteDomain(d1)
+		deleteDomain(d2)
 		deleteRecord(r1)
 	}()
 
@@ -626,6 +629,22 @@ func TestAPIv1RecordList(t *testing.T) {
 			ParseJSON(r.Body, &records)
 			So(len(records), ShouldEqual, 1)
 			So(records[0], ShouldResemble, *r1)
+		})
+
+		Convey("Empty list", func() {
+			var records []models.Record
+			r := Request(RequestOptions{
+				Method: "GET",
+				URL:    recordCreateURL(d2),
+				Headers: map[string]string{
+					"Authorization": "token " + t2.Key,
+				},
+			})
+
+			So(r.Code, ShouldEqual, http.StatusOK)
+			So(r.Body.String(), ShouldEqual, "[]")
+			ParseJSON(r.Body, &records)
+			So(len(records), ShouldEqual, 0)
 		})
 
 		Convey("Forbidden", func() {

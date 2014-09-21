@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jinzhu/gorm"
 	"github.com/majimoe/server/errors"
 	"github.com/majimoe/server/models"
 	"github.com/majimoe/server/util"
@@ -11,11 +12,13 @@ import (
 )
 
 func (a *APIv1) RecordList(c *gin.Context) {
-	var records []models.Record
+	records := []models.Record{}
 	domain := c.MustGet("domain").(*models.Domain)
 
 	if err := models.DB.Where("domain_id = ?", domain.Id).Find(&records).Error; err != nil {
-		panic(err)
+		if err != gorm.RecordNotFound {
+			panic(err)
+		}
 	}
 
 	util.Render.JSON(c.Writer, http.StatusOK, records)

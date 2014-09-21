@@ -13,6 +13,7 @@ func Home(c *gin.Context) {
 }
 
 func App(c *gin.Context) {
+	c.Writer.Header().Set("X-Frame-Options", "SAMEORIGIN")
 	util.Render.HTML(c.Writer, http.StatusOK, "app", nil)
 }
 

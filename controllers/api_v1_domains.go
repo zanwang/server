@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
 	"github.com/majimoe/server/errors"
 	"github.com/majimoe/server/models"
 	"github.com/majimoe/server/util"
@@ -12,11 +13,13 @@ import (
 )
 
 func (a *APIv1) DomainList(c *gin.Context) {
-	var domains []*models.Domain
+	domains := []models.Domain{}
 	user := c.MustGet("user").(*models.User)
 
 	if err := models.DB.Where("user_id = ?", user.Id).Find(&domains).Error; err != nil {
-		panic(err)
+		if err != gorm.RecordNotFound {
+			panic(err)
+		}
 	}
 
 	util.Render.JSON(c.Writer, http.StatusOK, domains)

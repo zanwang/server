@@ -269,6 +269,22 @@ func TestAPIv1DomainList(t *testing.T) {
 			So(domains[0], ShouldResemble, *d1)
 		})
 
+		Convey("Empty list", func() {
+			var domains []models.Domain
+			r := Request(RequestOptions{
+				Method: "GET",
+				URL:    domainCreateURL(u2),
+				Headers: map[string]string{
+					"Authorization": "token " + t2.Key,
+				},
+			})
+
+			So(r.Code, ShouldEqual, http.StatusOK)
+			So(r.Body.String(), ShouldEqual, "[]")
+			ParseJSON(r.Body, &domains)
+			So(len(domains), ShouldEqual, 0)
+		})
+
 		Convey("User does not exist", func() {
 			var err errors.API
 			r := Request(RequestOptions{

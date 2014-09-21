@@ -2,6 +2,7 @@ package server
 
 import (
 	"path"
+	"time"
 
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
@@ -19,16 +20,18 @@ func Server() *gin.Engine {
 		r.Use(gin.Logger())
 	}
 
-	r.Use(cors.Middleware(cors.Options{}))
+	r.Use(cors.Middleware(cors.Options{
+		MaxAge: time.Hour * 24,
+	}))
 
 	r.Use(controllers.Recovery)
 
 	r.GET("/", controllers.Home)
 	r.GET("/app", controllers.App)
+	r.GET("/app/settings", controllers.App)
 	r.GET("/login", controllers.App)
 	r.GET("/signup", controllers.App)
-	r.GET("/forgot_password", controllers.App)
-	r.GET("/settings", controllers.App)
+	r.GET("/password-reset", controllers.App)
 	r.GET("/users/:user_id/activation/:token", controllers.UserActivation)
 	r.GET("/users/:user_id/passwords/reset/:token", controllers.PasswordReset)
 	r.POST("/users/:user_id/passwords/reset", controllers.PasswordResetSubmit)
