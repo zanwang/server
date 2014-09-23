@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+	"net"
 	"strconv"
 
 	"time"
@@ -17,10 +18,12 @@ const (
 type Token struct {
 	Id        int64
 	Key       string
-	CreatedAt time.Time `json:"created_at"`
+	CreatedAt time.Time
 	UpdatedAt time.Time `json:"updated_at"`
 	ExpiredAt time.Time `sql:"-" json:"expired_at"`
 	UserId    int64     `json:"user_id"`
+	Ip        IP        `json:"ip"`
+	IsCurrent bool      `sql:"-" json:"is_current"`
 }
 
 func (t Token) MarshalJSON() ([]byte, error) {
@@ -54,4 +57,8 @@ func (t *Token) GetExpiredTime() time.Time {
 
 func (t *Token) IsExpired() bool {
 	return t.GetExpiredTime().Before(time.Now())
+}
+
+func (t *Token) SetIP(addr string) {
+	t.Ip = IP{net.ParseIP(addr)}
 }

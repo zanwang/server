@@ -1,4 +1,4 @@
-dev:
+development:
   driver: mymysql
   open: majimoe_dev/majimoe/majimoe
 

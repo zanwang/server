@@ -55,6 +55,7 @@ func Server() *gin.Engine {
 		apiv1Group.DELETE("/users/:user_id", middleware.TokenRequired, middleware.CheckPermissionOfUser, apiv1.UserDestroy)
 		apiv1Group.GET("/users/:user_id/domains", middleware.GetUser, apiv1.DomainList)
 		apiv1Group.POST("/users/:user_id/domains", middleware.TokenRequired, middleware.CheckPermissionOfUser, apiv1.DomainCreate)
+		apiv1Group.GET("/users/:user_id/tokens", middleware.TokenRequired, middleware.CheckPermissionOfUser, apiv1.TokenList)
 
 		apiv1Group.GET("/domains", apiv1.DomainList)
 		apiv1Group.GET("/domains/:domain_id", middleware.GetDomain, apiv1.DomainShow)

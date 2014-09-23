@@ -1,6 +1,10 @@
 package models
 
 import (
+	"bytes"
+	"database/sql/driver"
+	"encoding/binary"
+	"net"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -27,4 +31,25 @@ func init() {
 
 func ISOTime(t time.Time) string {
 	return t.UTC().Format(ISOTimeFormat)
+}
+
+type IP struct {
+	net.IP
+}
+
+func (ip IP) Value() (driver.Value, error) {
+	buf := new(bytes.Buffer)
+	err := binary.Write(buf, binary.LittleEndian, ip.IP)
+
+	return buf.Bytes(), err
+}
+
+func (ip *IP) Scan(val interface{}) error {
+	var err error
+
+	if b, ok := val.([]byte); ok {
+		ip.IP = b
+	}
+
+	return err
 }

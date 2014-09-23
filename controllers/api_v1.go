@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"net"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -53,6 +54,7 @@ func (api *APIv1) UpdateToken(c *gin.Context) {
 	defer func() {
 		if data, err := c.Get("token"); err == nil {
 			if token, ok := data.(*models.Token); ok {
+				token.SetIP(GetIPFromContext(c))
 				models.DB.Save(token)
 			}
 		}
@@ -82,4 +84,16 @@ func bindingError(err binding.Errors) {
 	}
 
 	panic(errors.API{Code: code, Message: err[0].Message})
+}
+
+func GetIPFromContext(c *gin.Context) string {
+	req := c.Request
+
+	if ip := req.Header.Get("X-Forwarded-For"); ip != "" {
+		return ip
+	}
+
+	host, _, _ := net.SplitHostPort(req.RemoteAddr)
+
+	return host
 }

@@ -74,6 +74,7 @@ func Request(options RequestOptions) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
 
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Forwarded-For", "10.0.0.1")
 
 	if options.Headers != nil {
 		for key, value := range options.Headers {

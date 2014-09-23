@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
@@ -221,6 +222,79 @@ func TestAPIv1TokenCreate(t *testing.T) {
 			So(err.Field, ShouldEqual, "password")
 			So(err.Code, ShouldEqual, errors.PasswordUnset)
 			So(err.Message, ShouldEqual, "Password has not been set")
+		})
+	})
+}
+
+func TestAPIv1TokenList(t *testing.T) {
+	_, u1 := createUser1()
+	_, u2 := createUser2()
+	_, t1a := createToken1()
+	_, t1b := createToken1()
+	_, t1c := createToken1()
+	_, t2 := createToken2()
+
+	defer func() {
+		deleteUser(u1)
+		deleteUser(u2)
+		deleteToken(t1a)
+		deleteToken(t1b)
+		deleteToken(t1c)
+		deleteToken(t2)
+	}()
+
+	Convey("API v1 - Token list", t, func() {
+		Convey("Success", func() {
+			var tokens []models.Token
+			r := Request(RequestOptions{
+				Method: "GET",
+				URL:    "/api/v1/users/" + strconv.FormatInt(u1.Id, 10) + "/tokens",
+				Headers: map[string]string{
+					"Authorization": "token " + t1a.Key,
+				},
+			})
+
+			So(r.Code, ShouldEqual, http.StatusOK)
+			So(r.Header().Get("Pragma"), ShouldEqual, "no-cache")
+			So(r.Header().Get("Cache-Control"), ShouldEqual, "no-cache, no-store, must-revalidate")
+			So(r.Header().Get("Expires"), ShouldEqual, "0")
+			ParseJSON(r.Body, &tokens)
+			So(len(tokens), ShouldEqual, 3)
+			So(tokens[0].IsCurrent, ShouldBeTrue)
+			So(tokens[0].Ip.String(), ShouldEqual, "10.0.0.1")
+			So(tokens[1].IsCurrent, ShouldBeFalse)
+			So(tokens[1].Ip.String(), ShouldEqual, "10.0.0.1")
+			So(tokens[2].IsCurrent, ShouldBeFalse)
+			So(tokens[2].Ip.String(), ShouldEqual, "10.0.0.1")
+		})
+
+		Convey("Unauthorized", func() {
+			var err errors.API
+			r := Request(RequestOptions{
+				Method: "GET",
+				URL:    "/api/v1/users/" + strconv.FormatInt(u1.Id, 10) + "/tokens",
+			})
+
+			So(r.Code, ShouldEqual, http.StatusUnauthorized)
+			ParseJSON(r.Body, &err)
+			So(err.Code, ShouldEqual, errors.TokenRequired)
+			So(err.Message, ShouldEqual, "Token is required")
+		})
+
+		Convey("Forbidden", func() {
+			var err errors.API
+			r := Request(RequestOptions{
+				Method: "GET",
+				URL:    "/api/v1/users/" + strconv.FormatInt(u1.Id, 10) + "/tokens",
+				Headers: map[string]string{
+					"Authorization": "token " + t2.Key,
+				},
+			})
+
+			So(r.Code, ShouldEqual, http.StatusForbidden)
+			ParseJSON(r.Body, &err)
+			So(err.Code, ShouldEqual, errors.UserForbidden)
+			So(err.Message, ShouldEqual, "You are forbidden to access this user")
 		})
 	})
 }
