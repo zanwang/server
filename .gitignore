@@ -2,3 +2,5 @@
 Godeps/*
 !Godeps/Godeps.json
 build/*
+public/
+views/

@@ -9,32 +9,43 @@ import (
 	"github.com/majimoe/server/config"
 	"github.com/majimoe/server/controllers"
 	"github.com/tommy351/gin-cors"
+	"github.com/tommy351/gin-csrf"
+	"github.com/tommy351/gin-sessions"
 )
 
 func Server() *gin.Engine {
 	conf := config.Config
 	r := gin.New()
+	store := sessions.NewCookieStore([]byte(conf.Server.Secret))
 	middleware := controllers.Middleware{}
 
 	if conf.Server.Logger {
 		r.Use(gin.Logger())
 	}
 
-	r.Use(cors.Middleware(cors.Options{
-		MaxAge: time.Hour * 24,
+	r.Use(controllers.Recovery)
+
+	r.Use(sessions.Middleware("mm_session", store))
+
+	r.Use(csrf.Middleware(csrf.Options{
+		Secret: conf.Server.Secret,
 	}))
 
-	r.Use(controllers.Recovery)
+	r.Use(cors.Middleware(cors.Options{
+		MaxAge:       time.Hour * 24,
+		AllowHeaders: []string{"Origin", "Accept", "Content-Type", "Authorization", "X-CSRF-Token"},
+	}))
 
 	r.GET("/", controllers.Home)
 	r.GET("/app", controllers.App)
 	r.GET("/app/settings", controllers.App)
+	r.GET("/app/domains/:id", controllers.App)
 	r.GET("/login", controllers.App)
 	r.GET("/signup", controllers.App)
 	r.GET("/password-reset", controllers.App)
 	r.GET("/users/:user_id/activation/:token", controllers.UserActivation)
 	r.GET("/users/:user_id/passwords/reset/:token", controllers.PasswordReset)
-	r.POST("/users/:user_id/passwords/reset", controllers.PasswordResetSubmit)
+	r.POST("/users/:user_id/passwords/reset/:token", controllers.PasswordResetSubmit)
 	r.NotFound404(controllers.NotFound)
 
 	apiv1Group := r.Group("/api/v1")

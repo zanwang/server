@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/asaskevich/govalidator"
 	"github.com/majimoe/server/errors"
 )
 
@@ -41,7 +40,7 @@ func (d Domain) MarshalJSON() ([]byte, error) {
 }
 
 func (d *Domain) BeforeSave() error {
-	if govalidator.IsNull(d.Name) {
+	if d.Name == "" {
 		return errors.New("name", errors.Required, "Name is required")
 	}
 

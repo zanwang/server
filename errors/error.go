@@ -61,6 +61,7 @@ const (
 	DomainReserved     = 224
 	UserForbidden      = 225
 	DomainNotRenewable = 226
+	PasswordConfirm    = 227
 	// Same as http status code
 	ServerError = 500
 )

@@ -83,7 +83,7 @@ func (u *User) PublicProfile() map[string]interface{} {
 }
 
 func (u *User) BeforeSave() error {
-	if govalidator.IsNull(u.Name) {
+	if u.Name == "" {
 		return errors.New("name", errors.Required, "Name is required")
 	}
 
@@ -114,7 +114,7 @@ func (u *User) Gravatar() {
 }
 
 func (u *User) GeneratePassword(password string) error {
-	if govalidator.IsNull(password) {
+	if password == "" {
 		return errors.New("password", errors.Required, "Password is required")
 	}
 
@@ -144,7 +144,7 @@ func (u *User) Authenticate(password string) error {
 		return errors.New("password", errors.MaxLength, "Maximum length of password is 50")
 	}
 
-	if govalidator.IsNull(u.Password) {
+	if u.Password == "" {
 		return &errors.API{
 			Status:  http.StatusUnauthorized,
 			Field:   "password",

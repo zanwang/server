@@ -46,7 +46,7 @@ func (r *Record) BeforeSave() error {
 		return errors.New("name", errors.MaxLength, "Maximum length of name is 63")
 	}
 
-	if len(r.Name) > 0 && !rDomainName.MatchString(r.Name) {
+	if r.Name != "" && !rDomainName.MatchString(r.Name) {
 		return errors.New("name", errors.DomainName, "Only numbers and characters are allowed in domain name")
 	}
 
